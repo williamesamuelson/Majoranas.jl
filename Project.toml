@@ -7,6 +7,7 @@ version = "1.0.0-DEV"
 AffineRayleighOptimization = "afc0e0ae-cd0a-41ee-b0f5-7950de095d62"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LinearSolve = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
 QuantumDots = "312194fd-fec5-4b07-ba1c-a40d7013a56a"
 TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
@@ -14,8 +15,8 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 julia = "1.6.7"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 
 [targets]

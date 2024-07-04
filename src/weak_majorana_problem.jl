@@ -1,3 +1,6 @@
+import AffineRayleighOptimization: RQ_EIG, RQ_GENEIG
+import LinearSolve: KrylovJL_MINRES
+
 """
     WeakMajoranaProblem(minimizer, γ, constraints, bs, projs)
 
@@ -18,7 +21,7 @@ end
 
 function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minimizer=RayleighQuotient(many_body_content_matrix(γ)))
     P, Q = projection_ops(oddvecs, evenvecs)
-    constraints = construct_matrix(γ, P, Q)
+    constraints = weak_majorana_constraint_matrix(γ, P, Q)
     bs = right_hand_sides(Q)
     ind = norm.(eachrow(constraints)) .> 1e-16 # remove redundant constraints
     constraints = constraints[ind, :]
@@ -26,7 +29,7 @@ function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minim
     WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
 end
 
-function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg=RQ_GENEIG())
+function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg=AffineRayleighOptimization.RQ_GENEIG())
     [solve(ConstrainedRayleighQuotientProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
 end
 

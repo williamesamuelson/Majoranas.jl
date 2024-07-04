@@ -2,14 +2,15 @@ function matrix_from_scalar_product(γ_basis, matrix_basis, lhs_projector, rhs_p
     return [scalar_product(basis_element, lhs_projector'*γ*rhs_projector) for basis_element in matrix_basis, γ in γ_basis]
 end
 
+pauli_basis() = ([0 1; 1 0], [0 -1im; 1im 0]) # should I do like this, change Eij basis, or have different scalar products?
+
+off_diagonal_basis(exc_dims) = (sqrt(exc_dims)*reshape(col, 2, exc_dims) for col in eachcol(I(2*exc_dims))) # better way to create a basis of E_ij?
+
 function groundstate_block(γ_basis::AbstractMajoranaBasis, gs_projector)
     σx, σy = pauli_basis()
     return matrix_from_scalar_product(γ_basis, (σx, σy), gs_projector, gs_projector)
 end
 
-pauli_basis() = ([0 1; 1 0], [0 -1im; 1im 0]) # should I do like this, change Eij basis, or have different scalar products?
-
-off_diagonal_basis(exc_dims) = (sqrt(exc_dims)*reshape(col, 2, exc_dims) for col in eachcol(I(2*exc_dims))) # better way to create a basis of E_ij?
 
 function off_diagonal_block(γ_basis, gs_projector, exc_projector)
     exc_dims = size(exc_projector, 2)
@@ -23,7 +24,7 @@ function construct_complex_matrices(γ::AbstractMajoranaBasis, gs_projector, exc
     return BP, BPQ
 end
 
-function construct_matrix(γ::AbstractMajoranaBasis, gs_projector, exc_projector)
+function weak_majorana_constraint_matrix(γ::AbstractMajoranaBasis, gs_projector, exc_projector)
     BP, BPQ = construct_complex_matrices(γ, gs_projector, exc_projector)
     B = [BP; BPQ]
     return [real.(B); imag.(B)]

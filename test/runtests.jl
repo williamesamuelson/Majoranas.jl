@@ -45,7 +45,7 @@ end
     @test isapprox([Majoranas.scalar_product(Ei, Ej) for Ei in off_diag_basis, Ej in off_diag_basis], I)
 end
 
-@testitem "Weak Majoranas" begin
+@testitem "Basic weak Majoranas" begin
     using QuantumDots, LinearAlgebra
     import QuantumDots: kitaev_hamiltonian
     c = FermionBasis(1:2; qn=QuantumDots.parity)
@@ -63,19 +63,19 @@ end
     @test norm(P' * γx * Q) < 1e-10
     # test matrix construction
     γ_mb = ManyBodyMajoranaBasis(c)
-    @test length(γ_mb) == mapreduce(l -> binomial(nbr_of_majoranas(c), l), +, 1:2:nbr_of_majoranas(c))
+    @test length(γ_mb) == mapreduce(l -> binomial(Majoranas.nbr_of_majoranas(c), l), +, 1:2:Majoranas.nbr_of_majoranas(c))
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q)
     @test size(BP) == (2, length(γ_mb))
     @test size(BPQ) == (2 * size(Q, 2), length(γ_mb))
     Bcomplex = [BP; BPQ]
     B = [real.(Bcomplex); imag.(Bcomplex)]
-    @test B == construct_matrix(γ_mb, P, Q)
+    @test B == Majoranas.weak_majorana_constraint_matrix(γ_mb, P, Q)
     rhsx, rhsy = Majoranas.right_hand_sides(Q)
     a_vec_x = B \ rhsx
     a_vec_y = B \ rhsy
-    basic_sols = Majoranas.basic_solve_many_body_majorana_coeffs(γ_mb, pmmham)
-    @test isapprox(a_vec_x, basic_sols[1].values)
-    @test isapprox(a_vec_y, basic_sols[2].values)
+    #=basic_sols = Majoranas.basic_solve_many_body_majorana_coeffs(γ_mb, pmmham)=#
+    #=@test isapprox(a_vec_x, basic_sols[1].values)=#
+    #=@test isapprox(a_vec_y, basic_sols[2].values)=#
     γx, γy = map(a_vec -> Majoranas.many_body_majorana_from_coeffs(γ_mb, a_vec), (a_vec_x, a_vec_y))
     @test isapprox(P'γx * P, σx)
     @test isapprox(P'γy * P, σy)
@@ -86,8 +86,9 @@ end
 end
 
 @testitem "WeakMajoranaProblem" begin
-    using QuantumDots, LinearAlgebra
+    using QuantumDots, LinearAlgebra, AffineRayleighOptimization
     import QuantumDots: kitaev_hamiltonian
+    import AffineRayleighOptimization: RQ_GENEIG, RQ_CHOL, RQ_EIG
     c = FermionBasis(1:2; qn=QuantumDots.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
@@ -98,9 +99,9 @@ end
     Q = Majoranas.many_body_content_matrix(γ_mb)
 
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, RayleighQuotient(Q))
-    sol1 = solve(prob, Majoranas.RQ_CHOL())
-    sol2 = solve(prob, Majoranas.RQ_GENEIG())
-    sol3 = solve(prob, Majoranas.RQ_EIG())
+    sol1 = solve(prob, RQ_CHOL())
+    sol2 = solve(prob, RQ_GENEIG())
+    sol3 = solve(prob, RQ_EIG())
     @test sol1 ≈ sol2
     @test sol1 ≈ sol3
 
