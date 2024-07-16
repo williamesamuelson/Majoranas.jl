@@ -41,8 +41,8 @@ end
     using LinearAlgebra
     paulibasis = Majoranas.pauli_basis()
     off_diag_basis = Majoranas.off_diagonal_basis(14)
-    @test isapprox([Majoranas.scalar_product(σi, σj) for σi in paulibasis, σj in paulibasis], I, atol=1e-6)
-    @test isapprox([Majoranas.scalar_product(Ei, Ej) for Ei in off_diag_basis, Ej in off_diag_basis], I)
+    @test isapprox([Majoranas.hilbert_schmidt_scalar_product(σi, σj) for σi in paulibasis, σj in paulibasis], I, atol=1e-6)
+    @test isapprox([Majoranas.hilbert_schmidt_scalar_product(Ei, Ej) for Ei in off_diag_basis, Ej in off_diag_basis], I)
 end
 
 @testitem "Basic weak Majoranas" begin

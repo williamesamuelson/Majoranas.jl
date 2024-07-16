@@ -29,12 +29,8 @@ function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minim
     WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
 end
 
-function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg=AffineRayleighOptimization.RQ_GENEIG())
+function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg=AffineRayleighOptimization.RQ_EIG())
     [solve(ConstrainedRayleighQuotientProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
-end
-
-function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg::RQ_EIG)
-    collect(eachcol(solve(ConstrainedRayleighQuotientProblem(prob.minimizer, prob.constraints, hcat(prob.bs...)), alg)))
 end
 
 function solve(prob::WeakMajoranaProblem{<:QuadraticForm}, alg=KrylovJL_MINRES())

@@ -1,5 +1,5 @@
 function matrix_from_scalar_product(γ_basis, matrix_basis, lhs_projector, rhs_projector)
-    return [scalar_product(basis_element, lhs_projector'*γ*rhs_projector) for basis_element in matrix_basis, γ in γ_basis]
+    return [hilbert_schmidt_scalar_product(basis_element, lhs_projector'*γ*rhs_projector) for basis_element in matrix_basis, γ in γ_basis]
 end
 
 pauli_basis() = ([0 1; 1 0], [0 -1im; 1im 0]) # should I do like this, change Eij basis, or have different scalar products?

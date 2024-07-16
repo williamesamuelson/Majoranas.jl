@@ -1,4 +1,4 @@
-function scalar_product(A,B)
+function hilbert_schmidt_scalar_product(A,B)
     return tr(A'*B)/size(B,2)
 end
 
@@ -26,7 +26,7 @@ function many_body_majorana_from_coeffs(γbasis::ManyBodyMajoranaBasis, coeffs)
 end
 
 function majorana_coefficients(γbasis::ManyBodyMajoranaBasis, maj::AbstractMatrix)
-    QuantumDots.dictionary(zip(labels(γbasis), map(γ->scalar_product(γ,maj), γbasis)))
+    QuantumDots.dictionary(zip(labels(γbasis), map(γ->hilbert_schmidt_scalar_product(γ,maj), γbasis)))
 end
 
 function majorana_coefficients(fermion_basis::FermionBasis, maj::AbstractMatrix)
