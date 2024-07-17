@@ -90,7 +90,7 @@ end
 @testitem "WeakMajoranaProblem" begin
     using QuantumDots, LinearAlgebra, AffineRayleighOptimization
     import QuantumDots: kitaev_hamiltonian
-    import AffineRayleighOptimization: RQ_GENEIG, RQ_CHOL, RQ_EIG
+    import AffineRayleighOptimization: RQ_GENEIG, RQ_CHOL, RQ_EIG, RQ_SPARSE
     c = FermionBasis(1:2; qn=QuantumDots.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
@@ -104,8 +104,10 @@ end
     sol1 = solve(prob, RQ_CHOL())
     sol2 = solve(prob, RQ_GENEIG())
     sol3 = solve(prob, RQ_EIG())
+    sol4 = solve(prob, RQ_SPARSE())
     @test sol1 ≈ sol2
     @test sol1 ≈ sol3
+    @test sol1 ≈ sol4
 
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, QuadraticForm(Q))
     sol3 = solve(prob)
