@@ -4,12 +4,16 @@
 [![Coverage](https://codecov.io/gh/williamesamuelson/Majoranas.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/williamesamuelson/Majoranas.jl)
 
 ## Installation
-This package depends on QuantumDots, which is not registered in the general registry. You may need to manually add it directly by 
+This package depends on QuantumDots and AffineRayleighOptimization, which are not registered in the general registry. You may need to manually add them directly by
 
 ```julia
-using Pkg; Pkg.add(url="https://github.com/cvsvensson/QuantumDots.jl")
+using Pkg; Pkg.add(url="https://github.com/cvsvensson/QuantumDots.jl"); Pkg.add(url="https://github.com/williamesamuelson/AffineRayleighOptimization.jl")
 ```
-or by adding the registry 
+or by adding the registry
 ```julia
-using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/cvsvensson/PackageRegistry"))
+using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/williamesamuelson/PackageRegistry"))
+```
+and add them from there
+```julia
+using Pkg; Pkg.add(QuantumDots); Pkg.add(AffineRayleighOptimization)
 ```
