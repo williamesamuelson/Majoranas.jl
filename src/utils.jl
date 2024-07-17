@@ -49,5 +49,6 @@ end
     γ_mb = ManyBodyMajoranaBasis(γ, 1)
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
     sols = solve(prob)
+    @test Majoranas.coeffs_to_dict(γ_mb, sols[1]) isa QuantumDots.Dictionary
     @test all(map(coeffs -> Majoranas.many_body_majorana(γ_mb, coeffs), sols) .≈ (γx, γy))
 end
