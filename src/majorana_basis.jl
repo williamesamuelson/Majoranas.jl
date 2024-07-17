@@ -24,7 +24,7 @@ end
 """
     full_many_body_majorana_labels(single_particle_labels, max_combinations)
 
-All combinations of many body Majorana labels up to products of max_combinations from single particle Majorana labels.
+All combinations of many body Majorana labels with products of lengths in combination_lengths.
 """
 function full_many_body_majorana_labels(single_particle_labels, combination_lengths::AbstractVector)
     mapreduce(length->collect(combinations(single_particle_labels, length)), vcat, combination_lengths)
