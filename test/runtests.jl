@@ -55,7 +55,7 @@ end
     oddvecs = fullsectors[1].vectors
     evenvecs = fullsectors[2].vectors
     γ_sp = SingleParticleMajoranaBasis(c)
-    γx, γy = Majoranas.single_particle_majoranas_from_ground_states(γ_sp, oddvecs[:, 1], evenvecs[:, 1])
+    γx, γy = Majoranas.single_particle_majoranas(γ_sp, oddvecs[:, 1], evenvecs[:, 1])
     P, Q = Majoranas.projection_ops(oddvecs, evenvecs)
     σx, σy = [0 1; 1 0], [0 -1im; 1im 0]
     @test isapprox(P' * γx * P, σx)
@@ -63,6 +63,7 @@ end
     @test norm(P' * γx * Q) < 1e-10
     # test matrix construction
     γ_mb = ManyBodyMajoranaBasis(c)
+    @test all(values(γ_mb) .== values(ManyBodyMajoranaBasis(c, 3)))
     @test length(γ_mb) == mapreduce(l -> binomial(Majoranas.nbr_of_majoranas(c), l), +, 1:2:Majoranas.nbr_of_majoranas(c))
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q)
     @test size(BP) == (2, length(γ_mb))
@@ -73,10 +74,11 @@ end
     rhsx, rhsy = Majoranas.right_hand_sides(Q)
     a_vec_x = B \ rhsx
     a_vec_y = B \ rhsy
-    #=basic_sols = Majoranas.basic_solve_many_body_majorana_coeffs(γ_mb, pmmham)=#
-    #=@test isapprox(a_vec_x, basic_sols[1].values)=#
-    #=@test isapprox(a_vec_y, basic_sols[2].values)=#
-    γx, γy = map(a_vec -> Majoranas.many_body_majorana_from_coeffs(γ_mb, a_vec), (a_vec_x, a_vec_y))
+    basic_prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
+    basic_sols = solve(basic_prob)
+    @test isapprox(a_vec_x, basic_sols[1])
+    @test isapprox(a_vec_y, basic_sols[2])
+    γx, γy = map(a_vec -> Majoranas.many_body_majorana(γ_mb, a_vec), (a_vec_x, a_vec_y))
     @test isapprox(P'γx * P, σx)
     @test isapprox(P'γy * P, σy)
     @test norm(P' * γx * Q) < 1e-10

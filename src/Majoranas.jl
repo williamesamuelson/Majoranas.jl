@@ -17,4 +17,9 @@ export SingleParticleMajoranaBasis, ManyBodyMajoranaBasis, labels
 export WeakMajoranaProblem
 export solve
 
+## "Trick" LSP so that stuff works in scripts files
+@static if false
+    include("../test/runtests.jl")
+end
+
 end
