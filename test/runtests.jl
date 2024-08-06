@@ -18,7 +18,7 @@ using TestItemRunner
         end
     end
     for fermion_label in QuantumDots.labels(c)
-        @test 1 / 2 * (γ[fermion_label..., :+] + 1im * γ[fermion_label..., :-]) == c[fermion_label...]
+        @test 1 / 2 * (γ[fermion_label..., :+] - 1im * γ[fermion_label..., :-]) == c[fermion_label...]
     end
     γ_mb = ManyBodyMajoranaBasis(γ)
     # nbr of many body basis operators should be binomial(8,1) + binomial(8,3) + ... + binomial(8,7)
@@ -26,7 +26,7 @@ using TestItemRunner
     random_index = ceil(Int, length(γ_mb) * rand())
     test_label = labels(γ_mb)[random_index]
     γ_mb_test = γ_mb[random_index]
-    @test γ_mb_test == 1im^((length(test_label) - 1) / 2) * mapreduce(label -> γ[label], *, test_label)
+    @test γ_mb_test == 1im^((length(test_label) - 1) / 2) * mapreduce(label -> γ[label...], *, test_label)
     @test γ_mb_test' == γ_mb_test
     @test γ_mb_test^2 == I
 
@@ -65,7 +65,8 @@ end
     # test matrix construction
     γ_mb = ManyBodyMajoranaBasis(c)
     @test all(values(γ_mb) .== values(ManyBodyMajoranaBasis(c, 3)))
-    @test length(γ_mb) == mapreduce(l -> binomial(Majoranas.nbr_of_majoranas(c), l), +, 1:2:Majoranas.nbr_of_majoranas(c))
+    nbr_of_majoranas = 2*QuantumDots.nbr_of_fermions(c)
+    @test length(γ_mb) == mapreduce(l -> binomial(nbr_of_majoranas, l), +, 1:2:nbr_of_majoranas)
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q)
     @test size(BP) == (2, length(γ_mb))
     @test size(BPQ) == (2 * size(Q, 2), length(γ_mb))
