@@ -55,6 +55,7 @@ end
     γx, γy = Majoranas.single_particle_majoranas(γ_sp, oddvecs[:, 1], evenvecs[:, 1])
     function test_mp(maj_basis, labels, known_mp)
         MP = Majoranas.majorana_polarization(maj_basis, γx, γy, labels)
+        display(MP)
         @test all(values(MP) .≈ known_mp)
     end
     test_mp(γ_mb, [1, 2], 1)
