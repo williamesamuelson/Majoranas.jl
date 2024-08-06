@@ -6,14 +6,16 @@ using LinearSolve
 using Combinatorics
 using TestItems
 import AffineRayleighOptimization: solve
+import QuantumDots: majorana_polarization
 
 include("majorana_basis.jl")
 include("utils.jl")
 include("weak_majorana_utils.jl")
 include("weak_majorana_constraints.jl")
 include("weak_majorana_problem.jl")
+include("majorana_polarization.jl")
 
-export SingleParticleMajoranaBasis, ManyBodyMajoranaBasis, labels
+export SingleParticleMajoranaBasis, ManyBodyMajoranaBasis, labels, coeffs_to_dict
 export WeakMajoranaProblem
 export solve
 
