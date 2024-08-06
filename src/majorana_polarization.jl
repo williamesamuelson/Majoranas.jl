@@ -35,10 +35,10 @@ find_sp_labels(maj_basis::SingleParticleMajoranaBasis) = labels(maj_basis)
     γ_mb = ManyBodyMajoranaBasis(c)
     sp_labels = find_sp_labels(γ_sp)
     @test all(sp_labels .== find_sp_labels(γ_mb))
-    @test find_label_indices(sp_labels, (1,:a)) == [1, 7]
+    @test find_label_indices(sp_labels, (1,:a)) == [1, 2]
     @test isempty(find_label_indices(sp_labels, (:c)))
-    @test Set(find_region_indices(γ_sp, [1, 2])) == Set([1, 2, 4, 5, 7, 8, 10, 11])
-    @test Set(find_region_indices(γ_mb, [1, 2])) == Set([1, 2, 4, 5, 7, 8, 10, 11])
+    @test Set(find_region_indices(γ_sp, [1, 2])) == Set([1, 2, 3, 4, 7, 8, 9, 10])
+    @test Set(find_region_indices(γ_mb, [1, 2])) == Set([1, 2, 3, 4, 7, 8, 9, 10])
 end
 
 @testitem "Majorana polarization" begin
