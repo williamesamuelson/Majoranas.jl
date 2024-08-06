@@ -43,22 +43,35 @@ end
 
 @testitem "Majorana polarization" begin
     using QuantumDots, LinearAlgebra
-    import QuantumDots: kitaev_hamiltonian
-    c = FermionBasis(1:3; qn=QuantumDots.parity)
-    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
-    eig = diagonalize(pmmham)
-    fullsectors = QuantumDots.blocks(eig; full=true)
-    oddvecs = fullsectors[1].vectors
-    evenvecs = fullsectors[2].vectors
-    γ_sp = SingleParticleMajoranaBasis(c)
-    γ_mb = ManyBodyMajoranaBasis(c)
-    γx, γy = Majoranas.single_particle_majoranas(γ_sp, oddvecs[:, 1], evenvecs[:, 1])
-    function test_mp(maj_basis, labels, known_mp)
-        MP = Majoranas.majorana_polarization(maj_basis, γx, γy, labels)
-        @test all(map(isapprox(known_mp; atol=1e-10), values(MP)))
+    import QuantumDots: kitaev_hamiltonian, BD1_hamiltonian
+    cpmm = FermionBasis(1:3; qn=QuantumDots.parity)
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=0.0, t=1.0, Δ=1.0)), cpmm)
+    function get_majoranas(sp_basis, ham)
+        eig = diagonalize(ham)
+        fullsectors = QuantumDots.blocks(eig; full=true)
+        oddvecs = fullsectors[1].vectors
+        evenvecs = fullsectors[2].vectors
+        return Majoranas.single_particle_majoranas(sp_basis, oddvecs[:, 1], evenvecs[:, 1])
     end
-    test_mp(γ_mb, [1, 2], 1)
-    test_mp(γ_sp, [1, 2], 1)
-    test_mp(γ_mb, [1, 2, 3], 0)
-    test_mp(γ_sp, [1, 2, 3], 0)
+    γ_sp = SingleParticleMajoranaBasis(cpmm)
+    γ_mb = ManyBodyMajoranaBasis(cpmm)
+    γs = get_majoranas(γ_sp, pmmham)
+    function test_mp(γs, maj_basis, labels, known_mp)
+        MP = Majoranas.majorana_polarization(maj_basis, γs..., labels)
+        @test all(map(isapprox(known_mp; atol=1e-5), values(MP)))
+    end
+    test_mp(γs, γ_mb, [1, 2], 1)
+    test_mp(γs, γ_sp, [1, 2], 1)
+    test_mp(γs, γ_mb, [1, 2, 3], 0)
+    test_mp(γs, γ_sp, [1, 2, 3], 0)
+
+    cbd1 = FermionBasis((1:2), (:↑, :↓); qn=QuantumDots.parity)
+    bd1ham = blockdiagonal(Hermitian(BD1_hamiltonian(cbd1; h=1e4, μ=1e4, t=1, Δ=0, Δ1=1, θ=[0, pi/2], U=0, V=0, ϕ=0)), cbd1)
+    γ_sp = SingleParticleMajoranaBasis(cbd1)
+    γ_mb = ManyBodyMajoranaBasis(cbd1)
+    γs = get_majoranas(γ_sp, bd1ham)
+    test_mp(γs, γ_mb, [(1,:↓)], 1)
+    test_mp(γs, γ_sp, [(1,:↓)], 1)
+    test_mp(γs, γ_mb, [(1,:↓), (2,:↓)], 0)
+    test_mp(γs, γ_sp, [(1,:↓), (2,:↓)], 0)
 end
