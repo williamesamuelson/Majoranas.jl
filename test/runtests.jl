@@ -33,8 +33,9 @@ using TestItemRunner
     coeffs = Majoranas.majorana_coefficients(γ_mb, γ_mb_test)
     @test coeffs == Majoranas.majorana_coefficients(c, γ_mb_test)
 
-    @test coeffs[test_label] == 1
-    @test norm(collect(values(coeffs))) == 1
+    dict_coeffs = coeffs_to_dict(γ_mb, coeffs)
+    @test dict_coeffs[test_label] == 1
+    @test norm(collect(values(dict_coeffs))) == 1
 end
 
 @testitem "Scalar product and utils" begin

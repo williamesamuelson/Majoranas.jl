@@ -21,12 +21,12 @@ function single_particle_majoranas(γbasis::SingleParticleMajoranaBasis, oddvec,
     return single_particle_majoranas(γbasis, coeffs)
 end
 
-function many_body_majorana(γbasis::ManyBodyMajoranaBasis, coeffs)
+function many_body_majorana(γbasis::AbstractMajoranaBasis, coeffs)
     return mapreduce((coeff, γ)->coeff*γ, +, coeffs, γbasis)
 end
 
-function majorana_coefficients(γbasis::ManyBodyMajoranaBasis, maj::AbstractMatrix)
-    QuantumDots.dictionary(zip(labels(γbasis), map(γ->hilbert_schmidt_scalar_product(γ,maj), γbasis)))
+function majorana_coefficients(γbasis::AbstractMajoranaBasis, maj::AbstractMatrix)
+    map(γ->hilbert_schmidt_scalar_product(γ, maj), γbasis)
 end
 
 function majorana_coefficients(fermion_basis::FermionBasis, maj::AbstractMatrix)
