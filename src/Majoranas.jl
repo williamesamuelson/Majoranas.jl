@@ -16,7 +16,7 @@ include("weak_majorana_constraints.jl")
 include("weak_majorana_problem.jl")
 include("majorana_polarization.jl")
 
-export SingleParticleMajoranaBasis, ManyBodyMajoranaBasis, labels, coeffs_to_dict
+export SingleParticleMajoranaBasis, ManyBodyMajoranaBasis, HamiltonianBasis, labels, coeffs_to_dict
 export WeakMajoranaProblem
 export solve
 

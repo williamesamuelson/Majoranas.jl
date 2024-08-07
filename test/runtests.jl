@@ -12,13 +12,13 @@ using TestItemRunner
     for γ_op in γ
         @test γ_op == γ_op'
         @test γ_op^2 == I
-        γ_test = γ[test_label...]
+        γ_test = γ[test_label]
         if γ_op ≠ γ_test
             @test γ_op * γ_test + γ_test * γ_op == 0 * I
         end
     end
     for fermion_label in QuantumDots.labels(c)
-        @test 1 / 2 * (γ[fermion_label..., :+] - 1im * γ[fermion_label..., :-]) == c[fermion_label...]
+        @test 1 / 2 * (γ[(fermion_label..., :+)] - 1im * γ[(fermion_label..., :-)]) == c[fermion_label...]
     end
     γ_mb = ManyBodyMajoranaBasis(γ)
     # nbr of many body basis operators should be binomial(8,1) + binomial(8,3) + ... + binomial(8,7)
@@ -26,7 +26,7 @@ using TestItemRunner
     random_index = ceil(Int, length(γ_mb) * rand())
     test_label = labels(γ_mb)[random_index]
     γ_mb_test = γ_mb[random_index]
-    @test γ_mb_test == 1im^((length(test_label) - 1) / 2) * mapreduce(label -> γ[label...], *, test_label)
+    @test γ_mb_test == 1im^(length(test_label)*(length(test_label) - 1) / 2) * mapreduce(label -> γ[label], *, test_label)
     @test γ_mb_test' == γ_mb_test
     @test γ_mb_test^2 == I
 
@@ -80,7 +80,7 @@ end
     basic_sols = solve(basic_prob)
     @test isapprox(a_vec_x, basic_sols[1])
     @test isapprox(a_vec_y, basic_sols[2])
-    γx, γy = map(a_vec -> Majoranas.many_body_majorana(γ_mb, a_vec), (a_vec_x, a_vec_y))
+    γx, γy = map(a_vec -> Majoranas.coeffs_to_matrix(γ_mb, a_vec), (a_vec_x, a_vec_y))
     @test isapprox(P'γx * P, σx)
     @test isapprox(P'γy * P, σy)
     @test norm(P' * γx * Q) < 1e-10
