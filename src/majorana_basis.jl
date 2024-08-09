@@ -61,12 +61,12 @@ end
 """
 To ensure that individual basis elememts square to one and are Hermitian.
 """
-manybody_majorana_phase(nbr_of_factors) = 1im^((nbr_of_factors-1)/2) # gives phases 1, i, -1, -i...
+manybody_majorana_phase(nbr_of_factors) = 1im^(nbr_of_factors*(nbr_of_factors - 1) / 2) # gives phases (0,1), (1,1), (2,i), (3, -i), (4, -1)...
 
 """
 Takes a list of single particle Majoranas and a single particle basis and constructs the corresponding many body Majorana.
 """
-labels_to_manybody_majorana(labels, γ) = manybody_majorana_phase(length(labels))*mapreduce(label->γ[label...], *, labels)
+labels_to_manybody_majorana(labels, γ) = manybody_majorana_phase(length(labels))*mapreduce(label->γ[label], *, labels)
 
 """
 Constructs a many body Majorana basis from a single particle basis.
@@ -105,7 +105,8 @@ end
     @test γ_sp.dict.values == γ_mb.dict.values
     @test γ_sp.dict.values == ManyBodyMajoranaBasis(γ_sp, 1).dict.values
     γ3 = ManyBodyMajoranaBasis(c, 3:3)
-    @test all([Majoranas.nbr_of_sp_majoranas(γ3, i) == 3 for i in 1:length(γ3)])
+    nbr_of_sp_majoranas(M, i) = length(labels(M)[i])
+    @test all([nbr_of_sp_majoranas(γ3, i) == 3 for i in 1:length(γ3)])
     γ_new_label = ManyBodyMajoranaBasis(c, 3, (:x, :y))
     sp_labels = [label for labelvec in labels(γ_new_label) for label in labelvec]
     @test all([any((:x, :y) .== label[end]) for label in sp_labels])
@@ -116,13 +117,14 @@ end
 end
 
 ### with SPMajoranas, use several arguments to index (or just the int for fermion free majoranas)
-Base.getindex(M::SingleParticleMajoranaBasis, i::Int) = M.dict[i] # for fermion free majoranas
-Base.getindex(M::SingleParticleMajoranaBasis, args...) = M.dict[args]
+#=Base.getindex(M::SingleParticleMajoranaBasis, i::Int) = M.dict[i] # for fermion free majoranas=#
+#=Base.getindex(M::SingleParticleMajoranaBasis, args...) = M.dict[args]=#
 #=Base.getindex(M::SingleParticleMajoranaBasis, t::Tuple)= M.dict[t]=#
+Base.getindex(M::AbstractMajoranaBasis, label)= M.dict[label]
 
 ### with MBMajoranas, use vector with labels or Int to index
-Base.getindex(M::ManyBodyMajoranaBasis, t::AbstractVector)= M.dict[t]
-Base.getindex(M::ManyBodyMajoranaBasis, i::Int)= M.dict[labels(M)[i]]
+#=Base.getindex(M::ManyBodyMajoranaBasis, t::AbstractVector)= M.dict[t]=#
+Base.getindex(M::ManyBodyMajoranaBasis, i::Int)= M.dict[labels(M)[i]] # do we need this?
 
 Base.iterate(M::AbstractMajoranaBasis) = iterate(M.dict)
 Base.iterate(M::AbstractMajoranaBasis, state) = iterate(M.dict, state)
@@ -130,4 +132,3 @@ Base.keys(M::AbstractMajoranaBasis) = keys(M.dict)
 Base.length(M::AbstractMajoranaBasis) = length(M.dict)
 labels(M::AbstractMajoranaBasis) = keys(M).values
 #=nbr_of_majoranas(c::FermionBasis) = 2*nbr_of_fermions(c)=#
-nbr_of_sp_majoranas(M::ManyBodyMajoranaBasis, i::Int) = length(labels(M)[i])

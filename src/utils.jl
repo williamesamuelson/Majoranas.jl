@@ -21,16 +21,20 @@ function single_particle_majoranas(γbasis::SingleParticleMajoranaBasis, oddvec,
     return single_particle_majoranas(γbasis, coeffs)
 end
 
-function many_body_majorana(γbasis::AbstractMajoranaBasis, coeffs)
+function coeffs_to_matrix(γbasis::AbstractMajoranaBasis, coeffs)
     return mapreduce((coeff, γ)->coeff*γ, +, coeffs, γbasis)
 end
 
-function majorana_coefficients(γbasis::AbstractMajoranaBasis, maj::AbstractMatrix)
-    map(γ->hilbert_schmidt_scalar_product(γ, maj), γbasis)
+function majorana_coefficients(γbasis::AbstractMajoranaBasis, mat::AbstractMatrix)
+    map(γ->hilbert_schmidt_scalar_product(γ, mat), γbasis)
 end
 
-function majorana_coefficients(fermion_basis::FermionBasis, maj::AbstractMatrix)
-    majorana_coefficients(ManyBodyMajoranaBasis(fermion_basis), maj)
+function majorana_coefficients(fermion_basis::FermionBasis, mat::AbstractMatrix)
+    majorana_coefficients(ManyBodyMajoranaBasis(fermion_basis), mat)
+end
+
+function matrix_to_dict(γbasis::AbstractMajoranaBasis, mat::AbstractMatrix)
+    return coeffs_to_dict(γbasis, majorana_coefficients(γbasis, mat))
 end
 
 @testitem "Majorana utils" begin
@@ -50,5 +54,5 @@ end
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
     sols = solve(prob)
     @test Majoranas.coeffs_to_dict(γ_mb, sols[1]) isa QuantumDots.Dictionary
-    @test all(map(coeffs -> Majoranas.many_body_majorana(γ_mb, coeffs), sols) .≈ (γx, γy))
+    @test all(map(coeffs -> Majoranas.coeffs_to_matrix(γ_mb, coeffs), sols) .≈ (γx, γy))
 end
