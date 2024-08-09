@@ -1,9 +1,9 @@
-function majorana_polarization(maj_basis::Majoranas.AbstractMajoranaBasis, γ1::T1, γ2::T2, region) where {T1,T2<:AbstractMatrix}
+function majorana_polarization(maj_basis::Majoranas.AbstractMajoranaBasis, γ1::T1, γ2::T2, region::AbstractVector) where {T1,T2<:AbstractMatrix}
     γs = map(γ->majorana_coefficients(maj_basis, γ), (γ1, γ2))
     return majorana_polarization(maj_basis, γs..., region)
 end
 
-function majorana_polarization(maj_basis::Majoranas.AbstractMajoranaBasis, γ1::T1, γ2::T2, region) where {T1,T2<:AbstractVector}
+function majorana_polarization(maj_basis::Majoranas.AbstractMajoranaBasis, γ1::T1, γ2::T2, region::AbstractVector) where {T1,T2<:AbstractVector}
     regions_indices = find_region_indices(maj_basis, region)
     γ1sq, γ2sq = map(γ->γ[regions_indices].^2, (γ1, γ2))
     N = abs(sum(γ1sq .- γ2sq))
@@ -74,4 +74,8 @@ end
     test_mp(γs, γ_sp, [(1,:↓)], 1)
     test_mp(γs, γ_mb, [(1,:↓), (2,:↓)], 0)
     test_mp(γs, γ_sp, [(1,:↓), (2,:↓)], 0)
+
+    γ1 = γ_mb[[(1,:↑,:+)]] + γ_mb[[(2,:↑,:+)]]
+    γ2 = γ_mb[[(1,:↓,:-)]] + γ_mb[[(2,:↓,:-)]]
+    map(lab->test_mp((γ1, γ2), γ_mb, [lab], 1), QuantumDots.labels(cbd1))
 end
