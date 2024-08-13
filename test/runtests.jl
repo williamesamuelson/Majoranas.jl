@@ -104,12 +104,15 @@ end
 
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, RayleighQuotient(Q))
     sol1 = solve(prob, RQ_CHOL())
+    @test all(Majoranas.test_weak_majorana_solution(prob, sol1)[1] .< 1e-10)
+    @test all(Majoranas.test_weak_majorana_solution(prob, sol1)[2] .< 1e-10)
     sol2 = solve(prob, RQ_GENEIG())
     sol3 = solve(prob, RQ_EIG())
     sol4 = solve(prob, RQ_SPARSE())
     @test sol1 ≈ sol2
     @test sol1 ≈ sol3
     @test sol1 ≈ sol4
+
 
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, QuadraticForm(Q))
     sol3 = solve(prob)
