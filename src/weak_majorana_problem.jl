@@ -48,6 +48,6 @@ end
 
 struct WM_BACKSLASH end
 
-function solve(prob::WeakMajoranaProblem, alg::WM_BACKSLASH)
+function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH)
     [prob.constraints\b for b in prob.bs]
 end
