@@ -77,7 +77,7 @@ end
     a_vec_x = B \ rhsx
     a_vec_y = B \ rhsy
     basic_prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
-    basic_sols = solve(basic_prob)
+    basic_sols = solve(basic_prob, Majoranas.WM_BACKSLASH())
     @test isapprox(a_vec_x, basic_sols[1])
     @test isapprox(a_vec_y, basic_sols[2])
     γx, γy = map(a_vec -> Majoranas.coeffs_to_matrix(γ_mb, a_vec), (a_vec_x, a_vec_y))

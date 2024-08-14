@@ -52,7 +52,7 @@ end
     @test all(Majoranas.single_particle_majoranas(γ, oddvecs[:,1], evenvecs[:, 1]) .≈ (γx, γy))
     γ_mb = ManyBodyMajoranaBasis(γ, 1)
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
-    sols = solve(prob)
+    sols = solve(prob, Majoranas.WM_BACKSLASH())
     @test Majoranas.coeffs_to_dict(γ_mb, sols[1]) isa QuantumDots.Dictionary
     @test all(map(coeffs -> Majoranas.coeffs_to_matrix(γ_mb, coeffs), sols) .≈ (γx, γy))
 end

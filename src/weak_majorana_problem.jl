@@ -46,6 +46,8 @@ function solve(prob::WeakMajoranaProblem{<:QuadraticForm}, alg=KrylovJL_MINRES()
     [solve(ConstrainedQuadraticFormProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
 end
 
-function solve(prob::WeakMajoranaProblem{<:Nothing})
+struct WM_BACKSLASH end
+
+function solve(prob::WeakMajoranaProblem, alg::WM_BACKSLASH)
     [prob.constraints\b for b in prob.bs]
 end
