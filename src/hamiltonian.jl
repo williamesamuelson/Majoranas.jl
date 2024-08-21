@@ -1,11 +1,21 @@
 struct HamiltonianBasis{D} <: AbstractMajoranaBasis
     dict::D
     fermion_basis::FermionBasis
-    function HamiltonianBasis(γ::SingleParticleMajoranaBasis)
-        dict = ManyBodyMajoranaBasis(γ, 2:2:length(γ)).dict # 0 doesn't have to be in right?
-        insert!(dict, empty(first(dict.indices)), copyto!(similar(first(dict), size(first(dict))), I)) # identity matrix
-        new{typeof(dict)}(dict, γ.fermion_basis)
-    end
+end
+
+function HamiltonianBasis(γ::SingleParticleMajoranaBasis)
+    dict = ManyBodyMajoranaBasis(γ, 2:2:length(γ)).dict # 0 doesn't have to be in right?
+    insert!(dict, empty(first(dict.indices)), copyto!(similar(first(dict), size(first(dict))), I)) # identity matrix
+    return HamiltonianBasis(dict, γ.fermion_basis)
+end
+
+function ProjectedHamiltonianBasis(γ::SingleParticleMajoranaBasis, parity::Int)
+    H = HamiltonianBasis(γ)
+    inds = γ.fermion_basis.symmetry.qntoinds[parity]
+    projected_mats = map(mat->mat[inds, inds], H.dict.values)
+    independent_inds = [(1:div(length(H), 2)-1)..., length(H)] # is this really correct?
+    independent_labels = labels(H)[independent_inds]
+    return HamiltonianBasis(QuantumDots.Dictionary(independent_labels, projected_mats[independent_inds]), H.fermion_basis)
 end
 
 @testitem "HamiltonianBasis" begin
@@ -23,4 +33,11 @@ end
     @test dict[[(1, :+), (2, :-)]] ≈ 1/2*(Δ + t)
     @test dict[[(1, :-), (2, :+)]] ≈ 1/2*(Δ - t)
     @test dict[[(1, :+), (1, :-), (2, :+), (2, :-)]] ≈ V/4 # sign is -1 on 4 length basis
+end
+
+@testitem "Projected HamiltonianBasis" begin
+    γ = SingleParticleMajoranaBasis(6)
+    H = HamiltonianBasis(γ)
+    Hp = ProjectedHamiltonianBasis(γ, -1)
+    # check setdiff(fullmajorana, Hp_labels) and see that none come up in Hp_labels
 end
