@@ -23,10 +23,11 @@ function SingleParticleMajoranaBasis(fermion_basis::FermionBasis, majorana_label
     return SingleParticleMajoranaBasis(fermion_basis, maj_basis_labels)
 end
 
-function SingleParticleMajoranaBasis(nbr_of_majoranas::Int; qn=QuantumDots.parity)
+function SingleParticleMajoranaBasis(nbr_of_majoranas::Int, maj_basis_labels=1:nbr_of_majoranas)
     iseven(nbr_of_majoranas) || throw(ErrorException("Number of majoranas must be even"))
-    c = FermionBasis(1:div(nbr_of_majoranas, 2); qn)
-    SingleParticleMajoranaBasis(c, 1:nbr_of_majoranas)
+    length(maj_basis_labels) == nbr_of_majoranas || throw(ErrorException("Length of labels must match nbr_of_majoranas"))
+    c = FermionBasis(1:div(nbr_of_majoranas, 2); qn=QuantumDots.parity)
+    SingleParticleMajoranaBasis(c, maj_basis_labels)
 end
 
 function standard_maj_basis_labels(fermion_basis, maj_labels)
@@ -36,9 +37,10 @@ end
 @testitem "SingleParticleMajoranaBasis without fermions" begin
     using QuantumDots, LinearAlgebra
     nbr_of_majoranas = 6
-    γ = SingleParticleMajoranaBasis(nbr_of_majoranas)
+    labs = 0:5
+    γ = SingleParticleMajoranaBasis(nbr_of_majoranas, labs)
     i = rand(1:nbr_of_majoranas)
-    for j in 1:nbr_of_majoranas
+    for j in labs
         @test γ[j]' == γ[j]
         anti_comm = γ[i]*γ[j] + γ[j]*γ[i]
         if i == j
