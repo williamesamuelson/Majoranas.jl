@@ -39,7 +39,7 @@ end
     nbr_of_majoranas = 6
     labs = 0:5
     γ = SingleParticleMajoranaBasis(nbr_of_majoranas, labs)
-    i = rand(1:nbr_of_majoranas)
+    i = rand(labs)
     for j in labs
         @test γ[j]' == γ[j]
         anti_comm = γ[i]*γ[j] + γ[j]*γ[i]
