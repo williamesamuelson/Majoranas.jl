@@ -29,11 +29,40 @@ function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minim
     WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
 end
 
+function WeakMajoranaProblem(γ::HamiltonianBasis, oddvecs, evenvecs, gs_σ0_comp, gs_σz_comp, minimizer=RayleighQuotient(many_body_content_matrix(γ)))
+    P, Q = projection_ops(oddvecs, evenvecs)
+    constraints = weak_majorana_constraint_matrix(γ, P, Q)
+    bs = [ham_right_hand_side(gs_σ0_comp, gs_σz_comp, Q)]
+    ind = norm.(eachrow(constraints)) .> 1e-16 # remove redundant constraints
+    constraints = constraints[ind, :]
+    bs = [b[ind] for b in bs]
+    WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
+end
+
+@testitem "Hamiltonian weak Majorana problem" begin
+    using QuantumDots, LinearAlgebra, AffineRayleighOptimization
+    import QuantumDots: kitaev_hamiltonian
+    c = FermionBasis(1:2; qn=QuantumDots.parity)
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=2.0, Δ=1.0)), c)
+    eig = diagonalize(pmmham)
+    fullsectors = QuantumDots.blocks(eig; full=true)
+    oddvecs, evenvecs = fullsectors[1].vectors, fullsectors[2].vectors
+    oddvals, evenvals = fullsectors[1].values, fullsectors[2].values
+    δE = (evenvals[1] - oddvals[1]) / 2
+    H = HamiltonianBasis(SingleParticleMajoranaBasis(c, (:a, :b)))
+    prob = WeakMajoranaProblem(H, oddvecs, evenvecs, 0, δE, nothing)
+    sol = solve(prob, Majoranas.WM_BACKSLASH_SPARSE())[1]
+    corr = Majoranas.coeffs_to_matrix(H, sol)
+    corrected_ham = blockdiagonal(pmmham + corr, c)
+    oddvals, evenvals = Majoranas.parity_eigvals(corrected_ham)
+    @test oddvals[1] ≈ evenvals[1]
+end
+
 function test_weak_majorana_solution(prob::WeakMajoranaProblem, sols)
-    σs = Majoranas.pauli_basis()
+    basis = Majoranas.pauli_basis()
     P, Q = prob.projs
     γs = map(sol -> Majoranas.coeffs_to_matrix(prob.γ, sol), sols)
-    gs_test = map((γ, σ) -> norm(P'γ * P - σ), γs, σs)
+    gs_test = map((γ, σ) -> norm(P'γ * P - σ), γs, basis[2:3])
     exc_test = map(γ -> norm(P' * γ * Q), γs)
     return gs_test, exc_test
 end
@@ -47,7 +76,12 @@ function solve(prob::WeakMajoranaProblem{<:QuadraticForm}, alg=KrylovJL_MINRES()
 end
 
 struct WM_BACKSLASH end
+struct WM_BACKSLASH_SPARSE end
 
 function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH)
     [prob.constraints\b for b in prob.bs]
+end
+
+function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH_SPARSE)
+    [sparse(prob.constraints)\b for b in prob.bs]
 end

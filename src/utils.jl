@@ -1,3 +1,11 @@
+function parity_eigvals(H::QuantumDots.BlockDiagonal)
+    eig = QuantumDots.diagonalize(H) # returns a DiagonalizedHamiltonian
+    sectors = QuantumDots.blocks(eig; full=false) # used to be "fullsectors"
+    oddvals = sectors[1].values
+    evenvals = sectors[2].values
+    return oddvals, evenvals
+end
+
 function hilbert_schmidt_scalar_product(A,B)
     return tr(A'*B)/size(B,2)
 end

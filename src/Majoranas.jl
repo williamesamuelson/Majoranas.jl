@@ -5,6 +5,7 @@ using AffineRayleighOptimization
 using LinearSolve
 using Combinatorics
 using TestItems
+using SparseArrays
 import AffineRayleighOptimization: solve
 import QuantumDots: majorana_polarization
 
