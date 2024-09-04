@@ -29,8 +29,8 @@ function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minim
     WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
 end
 
-function WeakMajoranaProblem(γ::HamiltonianBasis, oddvecs, evenvecs, gs_σ0_comp, gs_σz_comp, minimizer=RayleighQuotient(many_body_content_matrix(γ)))
-    P, Q = projection_ops(oddvecs, evenvecs)
+function WeakMajoranaProblem(γ::HamiltonianBasis, states, gs_σ0_comp, gs_σz_comp, minimizer=RayleighQuotient(many_body_content_matrix(γ)))
+    P, Q = projection_ops(states)
     constraints = weak_majorana_constraint_matrix(γ, P, Q)
     bs = [ham_right_hand_side(gs_σ0_comp, gs_σz_comp, Q)]
     ind = norm.(eachrow(constraints)) .> 1e-16 # remove redundant constraints
@@ -43,14 +43,11 @@ end
     using QuantumDots, LinearAlgebra, AffineRayleighOptimization
     import QuantumDots: kitaev_hamiltonian
     c = FermionBasis(1:2; qn=QuantumDots.parity)
-    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=2.0, Δ=1.0)), c)
-    eig = diagonalize(pmmham)
-    fullsectors = QuantumDots.blocks(eig; full=true)
-    oddvecs, evenvecs = fullsectors[1].vectors, fullsectors[2].vectors
-    oddvals, evenvals = fullsectors[1].values, fullsectors[2].values
-    δE = (evenvals[1] - oddvals[1]) / 2
+    pmmham = Hermitian(Matrix(kitaev_hamiltonian(c; μ=0.0, t=2.0, Δ=1.0)))
+    eig = eigen(pmmham)
+    δE = (eig.values[2] - eig.values[1]) / 2
     H = HamiltonianBasis(SingleParticleMajoranaBasis(c, (:a, :b)))
-    prob = WeakMajoranaProblem(H, oddvecs, evenvecs, 0, δE, nothing)
+    prob = WeakMajoranaProblem(H, eig.vectors, 0, δE, nothing)
     sol = solve(prob, Majoranas.WM_BACKSLASH_SPARSE())[1]
     corr = Majoranas.coeffs_to_matrix(H, sol)
     corrected_ham = blockdiagonal(pmmham + corr, c)

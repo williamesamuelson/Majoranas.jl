@@ -8,6 +8,12 @@ function projection_ops(oddvecs, evenvecs)
     return P, Q
 end
 
+function projection_ops(states)
+    P = gs_projection_op(states[:, 1], states[:, 2])
+    Q = states[:, 3:end]
+    return P, Q
+end
+
 function many_body_content(γbasis::ManyBodyMajoranaBasis, coeffs::AbstractVector)
     M = many_body_content_matrix(γbasis)
     return coeffs'*M*coeffs/norm(coeffs)^2
@@ -17,5 +23,3 @@ function many_body_content_matrix(γbasis::ManyBodyMajoranaBasis)
     return Diagonal([length(label) for label in eachindex(γbasis)])
 end
 
-#=function many_body_content(γbasis::ManyBodyMajoranaBasis, γ)=#
-#=end=#
