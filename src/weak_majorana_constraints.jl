@@ -6,16 +6,14 @@ pauli_basis() = ([1 0; 0 1], [0 1; 1 0], [0 -1im; 1im 0], [1 0; 0 -1]) # should 
 
 off_diagonal_basis(exc_dims) = (sqrt(exc_dims)*reshape(col, 2, exc_dims) for col in eachcol(I(2*exc_dims))) # better way to create a basis of E_ij?
 
-function groundstate_block(γ_basis::AbstractMajoranaBasis, gs_projector)
-    basis = pauli_basis()
-    σx, σy = basis[2], basis[3]
-    return matrix_from_scalar_product(γ_basis, (σx, σy), gs_projector, gs_projector)
-end
+#=function groundstate_block(γ_basis::AbstractMajoranaBasis, gs_projector)=#
+#=    basis = pauli_basis()=#
+#=    σx, σy = basis[2], basis[3]=#
+#=    return matrix_from_scalar_product(γ_basis, (σx, σy), gs_projector, gs_projector)=#
+#=end=#
 
-function groundstate_block(γ_basis::HamiltonianBasis, gs_projector)
-    basis = pauli_basis()
-    σ0, σz = basis[1], basis[4]
-    return matrix_from_scalar_product(γ_basis, (σ0, σz), gs_projector, gs_projector)
+function groundstate_block(γ_basis::AbstractMajoranaBasis, gs_projector)
+    return matrix_from_scalar_product(γ_basis, pauli_basis(), gs_projector, gs_projector)
 end
 
 function off_diagonal_block(γ_basis, gs_projector, exc_projector)
@@ -36,19 +34,18 @@ function weak_majorana_constraint_matrix(γ::AbstractMajoranaBasis, gs_projector
     return [real.(B); imag.(B)]
 end
 
-function right_hand_sides(exc_projector)
-    complex_matrix_rows = 2 + 2 * size(exc_projector, 2)
-    rhsx = zeros(Float64, 2 * complex_matrix_rows)
-    rhsy = zeros(Float64, 2 * complex_matrix_rows)
-    rhsx[1] = 1
-    rhsy[2] = 1
-    return rhsx, rhsy
-end
+#=function right_hand_sides(exc_projector)=#
+#=    complex_matrix_rows = 2 + 2 * size(exc_projector, 2)=#
+#=    rhsx = zeros(Float64, 2 * complex_matrix_rows)=#
+#=    rhsy = zeros(Float64, 2 * complex_matrix_rows)=#
+#=    rhsx[1] = 1=#
+#=    rhsy[2] = 1=#
+#=    return rhsx, rhsy=#
+#=end=#
 
-function ham_right_hand_side(σ0_comp, σz_comp, exc_projector)
-    complex_matrix_rows = 2 + 2 * size(exc_projector, 2)
-    rhs = zeros(Float64, 2 * complex_matrix_rows)
-    rhs[1] = σ0_comp
-    rhs[2] = σz_comp
+function right_hand_side(gs_σ_comps, exc_projector)
+    complex_matrix_rows = 4 + 2 * size(exc_projector, 2) # 4 ground state equations and 2* #exc states eqs in exc states
+    rhs = zeros(Float64, 2 * complex_matrix_rows) # twice the size after splitting into real and complex
+    rhs[1:4] .= gs_σ_comps
     return rhs
 end

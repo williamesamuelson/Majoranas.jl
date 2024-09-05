@@ -68,12 +68,12 @@ end
     nbr_of_majoranas = 2*QuantumDots.nbr_of_fermions(c)
     @test length(γ_mb) == mapreduce(l -> binomial(nbr_of_majoranas, l), +, 1:2:nbr_of_majoranas)
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q)
-    @test size(BP) == (2, length(γ_mb))
+    @test size(BP) == (4, length(γ_mb))
     @test size(BPQ) == (2 * size(Q, 2), length(γ_mb))
     Bcomplex = [BP; BPQ]
     B = [real.(Bcomplex); imag.(Bcomplex)]
     @test B == Majoranas.weak_majorana_constraint_matrix(γ_mb, P, Q)
-    rhsx, rhsy = Majoranas.right_hand_sides(Q)
+    rhsx, rhsy = [Majoranas.right_hand_side(σvec, Q) for σvec in ([0, 1, 0, 0], [0, 0, 1, 0])]
     a_vec_x = B \ rhsx
     a_vec_y = B \ rhsy
     basic_prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)

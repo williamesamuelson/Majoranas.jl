@@ -19,24 +19,44 @@ struct WeakMajoranaProblem{M,G,C,B,PQ}
     projs::PQ
 end
 
-function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minimizer=RayleighQuotient(many_body_content_matrix(γ)))
+_def_minimizer(γ) = RayleighQuotient(many_body_content_matrix(γ))
+_def_pauli_comps(::ManyBodyMajoranaBasis) = ([0., 1., 0., 0.], [0., 0., 1., 0.]) # should we really restrict σ0?
+function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minimizer=_def_minimizer(γ), gs_pauli_comps=_def_pauli_comps(γ))
     P, Q = projection_ops(oddvecs, evenvecs)
     constraints = weak_majorana_constraint_matrix(γ, P, Q)
-    bs = right_hand_sides(Q)
-    ind = norm.(eachrow(constraints)) .> 1e-16 # remove redundant constraints
-    constraints = constraints[ind, :]
-    bs = [b[ind] for b in bs]
+    bs = [right_hand_side(σvec, Q) for σvec in gs_pauli_comps]
+    constraints, bs = _get_reduced_eqs(constraints, bs)
     WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
 end
 
-function WeakMajoranaProblem(γ::HamiltonianBasis, states, gs_σ0_comp, gs_σz_comp, minimizer=RayleighQuotient(many_body_content_matrix(γ)))
+function WeakMajoranaProblem(γ::HamiltonianBasis, states, minimizer, gs_pauli_comps)
     P, Q = projection_ops(states)
     constraints = weak_majorana_constraint_matrix(γ, P, Q)
-    bs = [ham_right_hand_side(gs_σ0_comp, gs_σz_comp, Q)]
-    ind = norm.(eachrow(constraints)) .> 1e-16 # remove redundant constraints
+    bs = [right_hand_side(gs_pauli_comps, Q)]
+    constraints, bs = _get_reduced_eqs(constraints, bs)
+    WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
+end
+
+function _zero_row_equations(constraints, bs, ϵ=1e-16)
+    ind = norm.(eachrow(constraints)) .> ϵ # remove redundant constraints
+    inc_eqs = !all([all(abs.(b[.!ind]) .< ϵ) for b in bs])
+    inc_eqs ? error("equations inconsistent") : ind
+end
+
+@testitem "Zero row equations" begin
+    constraints = vcat([1, 1, 1]', zeros(3)', rand(3)')
+    b1 = [0, 1, 1] # not ok
+    b2 = [1, 0, 0] # ok
+    @test_throws ErrorException("equations inconsistent") Majoranas._zero_row_equations(constraints, [b1, b2])
+    @test_throws ErrorException("equations inconsistent") Majoranas._zero_row_equations(constraints, [b1])
+    @test Majoranas._zero_row_equations(constraints, [b2]) == [1, 0, 1]
+end
+
+function _get_reduced_eqs(constraints, bs)
+    ind = _zero_row_equations(constraints, bs)
     constraints = constraints[ind, :]
     bs = [b[ind] for b in bs]
-    WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
+    return constraints, bs
 end
 
 @testitem "Hamiltonian weak Majorana problem" begin
@@ -47,8 +67,8 @@ end
     eig = eigen(pmmham)
     δE = (eig.values[2] - eig.values[1]) / 2
     H = HamiltonianBasis(SingleParticleMajoranaBasis(c, (:a, :b)))
-    prob = WeakMajoranaProblem(H, eig.vectors, 0, δE, nothing)
-    sol = solve(prob, Majoranas.WM_BACKSLASH_SPARSE())[1]
+    prob = WeakMajoranaProblem(H, eig.vectors, nothing, [0, 0, 0, δE])
+    sol = solve(prob, Majoranas.WM_BACKSLASH_SPARSE())
     corr = Majoranas.coeffs_to_matrix(H, sol)
     corrected_ham = blockdiagonal(pmmham + corr, c)
     oddvals, evenvals = Majoranas.parity_eigvals(corrected_ham)
@@ -65,20 +85,27 @@ function test_weak_majorana_solution(prob::WeakMajoranaProblem, sols)
 end
 
 function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg=AffineRayleighOptimization.RQ_EIG())
-    [solve(ConstrainedRayleighQuotientProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
+    sols = [solve(ConstrainedRayleighQuotientProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
+    _return_sol(prob, sols)
 end
 
 function solve(prob::WeakMajoranaProblem{<:QuadraticForm}, alg=KrylovJL_MINRES())
-    [solve(ConstrainedQuadraticFormProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
+    sols = [solve(ConstrainedQuadraticFormProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
+    _return_sol(prob, sols)
 end
 
 struct WM_BACKSLASH end
 struct WM_BACKSLASH_SPARSE end
 
 function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH)
-    [prob.constraints\b for b in prob.bs]
+    sols = [prob.constraints\b for b in prob.bs]
+    _return_sol(prob, sols)
 end
 
 function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH_SPARSE)
-    [sparse(prob.constraints)\b for b in prob.bs]
+    sols = [sparse(prob.constraints)\b for b in prob.bs]
+    _return_sol(prob, sols)
 end
+
+_return_sol(prob::WeakMajoranaProblem{M,<:ManyBodyMajoranaBasis}, sols) where M = sols
+_return_sol(prob::WeakMajoranaProblem{M,<:HamiltonianBasis}, sols) where M = only(sols)
