@@ -19,9 +19,8 @@ struct WeakMajoranaProblem{M,G,C,B,PQ}
     projs::PQ
 end
 
-_def_minimizer(γ) = RayleighQuotient(many_body_content_matrix(γ))
 _def_pauli_comps(::ManyBodyMajoranaBasis) = ([0., 1., 0., 0.], [0., 0., 1., 0.]) # should we really restrict σ0?
-function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minimizer=_def_minimizer(γ), gs_pauli_comps=_def_pauli_comps(γ))
+function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minimizer=RayleighQuotient(many_body_content_matrix(γ)), gs_pauli_comps=_def_pauli_comps(γ))
     P, Q = projection_ops(oddvecs, evenvecs)
     constraints = weak_majorana_constraint_matrix(γ, P, Q)
     bs = [right_hand_side(σvec, Q) for σvec in gs_pauli_comps]
@@ -29,6 +28,7 @@ function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minim
     WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
 end
 
+# In the Hamiltonian problem, we might only have one parity
 function WeakMajoranaProblem(γ::HamiltonianBasis, states, minimizer, gs_pauli_comps)
     P, Q = projection_ops(states)
     constraints = weak_majorana_constraint_matrix(γ, P, Q)
