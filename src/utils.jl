@@ -29,6 +29,12 @@ function single_particle_majoranas(γbasis::SingleParticleMajoranaBasis, oddvec,
     return single_particle_majoranas(γbasis, coeffs)
 end
 
+function strong_majoranas(oddvecs, evenvecs, signs)
+    γx = mapreduce((odd, even, s) -> (-1)^s * (odd*even' + even*odd'), +, eachcol(oddvecs), eachcol(evenvecs), signs[1])
+    γy = mapreduce((odd, even, s) -> (-1)^s * 1im * (odd*even' - even*odd'), +, eachcol(oddvecs), eachcol(evenvecs), signs[2])
+    return γx, γy
+end
+
 function coeffs_to_matrix(γbasis::AbstractMajoranaBasis, coeffs)
     return mapreduce((coeff, γ)->coeff*γ, +, coeffs, γbasis)
 end
@@ -63,4 +69,9 @@ end
     sols = solve(prob, Majoranas.WM_BACKSLASH())
     @test Majoranas.coeffs_to_dict(γ_mb, sols[1]) isa QuantumDots.Dictionary
     @test all(map(coeffs -> Majoranas.coeffs_to_matrix(γ_mb, coeffs), sols) .≈ (γx, γy))
+    # strong majoranas
+    signs_x = [0, 1, 1, 1] # no idea why these signs work
+    signs_y = ones(size(oddvecs, 2))
+    γx_s, γy_s = Majoranas.strong_majoranas(oddvecs, evenvecs, (signs_x, signs_y))
+    @test all((γx_s, γy_s) .≈ (γx, γy))
 end
