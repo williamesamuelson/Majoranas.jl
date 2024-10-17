@@ -6,15 +6,15 @@ using QuantumDots: nbr_of_fermions
 
 Create a single particle Majorana basis from a fermion basis. Labels for the Majoranas can be provided.
 """
-struct SingleParticleMajoranaBasis{D} <: AbstractMajoranaBasis
+struct SingleParticleMajoranaBasis{D, B} <: AbstractMajoranaBasis
     dict::D
-    fermion_basis::FermionBasis
-    function SingleParticleMajoranaBasis(fermion_basis::FermionBasis, maj_basis_labels=standard_maj_basis_labels(fermion_basis, (:+,:-)))
+    fermion_basis::B
+    function SingleParticleMajoranaBasis(fermion_basis::B, maj_basis_labels=standard_maj_basis_labels(fermion_basis, (:+,:-))) where B <: FermionBasis
         N = length(fermion_basis)
         length(maj_basis_labels) == 2 * N || throw(ErrorException("Number of majoranas is not twice the fermion number"))
         majs = reduce(vcat, [[f + f', 1im * (f - f')] for f in fermion_basis]) # to get correct ordering
-        d = QuantumDots.dictionary(zip(maj_basis_labels, values(majs)))
-        new{typeof(d)}(d, fermion_basis)
+        d = OrderedDict(zip(maj_basis_labels, values(majs)))
+        new{typeof(d),B}(d, fermion_basis)
     end
 end
 
@@ -78,7 +78,7 @@ struct ManyBodyMajoranaBasis{M}<:AbstractMajoranaBasis
     function ManyBodyMajoranaBasis(γ::SingleParticleMajoranaBasis, combination_lengths::AbstractVector)
         many_body_labels = full_many_body_majorana_labels(labels(γ), combination_lengths)
         γmb = map(labels->labels_to_manybody_majorana(labels, γ), many_body_labels)
-        d = QuantumDots.dictionary(zip(many_body_labels, γmb))
+        d = OrderedDict(zip(Tuple.(many_body_labels), γmb))
         new{typeof(d)}(d)
     end
 end
@@ -104,8 +104,8 @@ end
     c = FermionBasis(1:3)
     γ_sp = SingleParticleMajoranaBasis(c)
     γ_mb = ManyBodyMajoranaBasis(c, 1)
-    @test γ_sp.dict.values == γ_mb.dict.values
-    @test γ_sp.dict.values == ManyBodyMajoranaBasis(γ_sp, 1).dict.values
+    @test all(values(γ_sp.dict) .== values(γ_mb.dict))
+    @test all(values(γ_sp.dict) .== values(ManyBodyMajoranaBasis(γ_sp, 1).dict))
     γ3 = ManyBodyMajoranaBasis(c, 3:3)
     nbr_of_sp_majoranas(M, i) = length(labels(M)[i])
     @test all([nbr_of_sp_majoranas(γ3, i) == 3 for i in 1:length(γ3)])
@@ -128,9 +128,10 @@ Base.getindex(M::AbstractMajoranaBasis, label)= M.dict[label]
 #=Base.getindex(M::ManyBodyMajoranaBasis, t::AbstractVector)= M.dict[t]=#
 Base.getindex(M::ManyBodyMajoranaBasis, i::Int)= M.dict[labels(M)[i]] # do we need this?
 
-Base.iterate(M::AbstractMajoranaBasis) = iterate(M.dict)
-Base.iterate(M::AbstractMajoranaBasis, state) = iterate(M.dict, state)
+Base.iterate(M::AbstractMajoranaBasis) = iterate(values(M.dict))
+Base.iterate(M::AbstractMajoranaBasis, state) = iterate(values(M.dict), state)
 Base.keys(M::AbstractMajoranaBasis) = keys(M.dict)
+Base.values(M::AbstractMajoranaBasis) = values(M.dict)
 Base.length(M::AbstractMajoranaBasis) = length(M.dict)
-labels(M::AbstractMajoranaBasis) = keys(M).values
+labels(M::AbstractMajoranaBasis) = collect(keys(M))
 #=nbr_of_majoranas(c::FermionBasis) = 2*nbr_of_fermions(c)=#
