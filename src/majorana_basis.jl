@@ -106,6 +106,7 @@ end
     γ_mb = ManyBodyMajoranaBasis(c, 1)
     @test all(values(γ_sp.dict) .== values(γ_mb.dict))
     @test all(values(γ_sp.dict) .== values(ManyBodyMajoranaBasis(γ_sp, 1).dict))
+    @test γ_sp[1,:+] == γ_sp[(1,:+)]
     γ3 = ManyBodyMajoranaBasis(c, 3:3)
     nbr_of_sp_majoranas(M, i) = length(labels(M)[i])
     @test all([nbr_of_sp_majoranas(γ3, i) == 3 for i in 1:length(γ3)])
