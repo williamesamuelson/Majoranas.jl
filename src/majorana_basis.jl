@@ -123,7 +123,7 @@ end
 #=Base.getindex(M::SingleParticleMajoranaBasis, args...) = M.dict[args]=#
 #=Base.getindex(M::SingleParticleMajoranaBasis, t::Tuple)= M.dict[t]=#
 Base.getindex(M::AbstractMajoranaBasis, label)= M.dict[label]
-
+Base.getindex(M::AbstractMajoranaBasis, labels...)= M.dict[labels]
 ### with MBMajoranas, use vector with labels or Int to index
 #=Base.getindex(M::ManyBodyMajoranaBasis, t::AbstractVector)= M.dict[t]=#
 Base.getindex(M::ManyBodyMajoranaBasis, i::Int)= M.dict[labels(M)[i]] # do we need this?
