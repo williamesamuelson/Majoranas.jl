@@ -11,7 +11,7 @@ function hilbert_schmidt_scalar_product(A,B)
 end
 
 function coeffs_to_dict(γ::AbstractMajoranaBasis, coeffs::AbstractVector)
-    return QuantumDots.dictionary(zip(keys(γ), coeffs))
+    return OrderedDict(zip(keys(γ), coeffs))
 end
 
 function single_particle_majoranas_matrix_els(γbasis::SingleParticleMajoranaBasis, oddvec, evenvec)
@@ -52,7 +52,7 @@ function matrix_to_dict(γbasis::AbstractMajoranaBasis, mat::AbstractMatrix)
 end
 
 @testitem "Majorana utils" begin
-    using QuantumDots, LinearAlgebra
+    using QuantumDots, LinearAlgebra, OrderedCollections
     import QuantumDots: kitaev_hamiltonian
     c = FermionBasis(1:2; qn=QuantumDots.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
@@ -67,7 +67,7 @@ end
     γ_mb = ManyBodyMajoranaBasis(γ, 1)
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
     sols = solve(prob, Majoranas.WM_BACKSLASH())
-    @test Majoranas.coeffs_to_dict(γ_mb, sols[1]) isa QuantumDots.Dictionary
+    @test Majoranas.coeffs_to_dict(γ_mb, sols[1]) isa OrderedDict
     @test all(map(coeffs -> Majoranas.coeffs_to_matrix(γ_mb, coeffs), sols) .≈ (γx, γy))
     # strong majoranas
     signs_x = [0, 1, 1, 1] # no idea why these signs work

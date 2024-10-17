@@ -6,6 +6,7 @@ using LinearSolve
 using Combinatorics
 using TestItems
 using SparseArrays
+using OrderedCollections
 import AffineRayleighOptimization: solve
 import QuantumDots: majorana_polarization
 
