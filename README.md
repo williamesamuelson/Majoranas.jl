@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/williamesamuelson/Majoranas.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/williamesamuelson/Majoranas.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/williamesamuelson/Majoranas.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/williamesamuelson/Majoranas.jl)
 
-## Installation
+## Installation on Julia versions below 1.11
 This package depends on QuantumDots and AffineRayleighOptimization, which are not registered in the general registry. You may need to manually add them directly by
 
 ```julia
