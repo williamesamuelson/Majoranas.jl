@@ -26,7 +26,7 @@ using TestItemRunner
     random_index = ceil(Int, length(γ_mb) * rand())
     test_label = labels(γ_mb)[random_index]
     γ_mb_test = γ_mb[random_index]
-    @test γ_mb_test == 1im^(length(test_label)*(length(test_label) - 1) / 2) * mapreduce(label -> γ[label], *, test_label)
+    @test γ_mb_test == 1im^(length(test_label) * (length(test_label) - 1) / 2) * mapreduce(label -> γ[label], *, test_label)
     @test γ_mb_test' == γ_mb_test
     @test γ_mb_test^2 == I
 
@@ -65,7 +65,7 @@ end
     # test matrix construction
     γ_mb = ManyBodyMajoranaBasis(c)
     @test all(values(γ_mb) .== values(ManyBodyMajoranaBasis(c, 3)))
-    nbr_of_majoranas = 2*QuantumDots.nbr_of_fermions(c)
+    nbr_of_majoranas = 2 * QuantumDots.nbr_of_fermions(c)
     @test length(γ_mb) == mapreduce(l -> binomial(nbr_of_majoranas, l), +, 1:2:nbr_of_majoranas)
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q, Majoranas._def_pauli_comps(γ_mb)[1])
     @test size(BP) == (2, length(γ_mb))
@@ -73,7 +73,7 @@ end
     Bcomplex = [BP; BPQ]
     B = [real.(Bcomplex); imag.(Bcomplex)]
     @test B == Majoranas.weak_majorana_constraint_matrix(γ_mb, P, Q, Majoranas._def_pauli_comps(γ_mb)[1])
-    rhsx, rhsy = [Majoranas.right_hand_side(σvec, Q) for σvec in ([nothing, 1., 0., nothing], [nothing, 0., 1., nothing])]
+    rhsx, rhsy = [Majoranas.right_hand_side(σvec, Q) for σvec in ([nothing, 1.0, 0.0, nothing], [nothing, 0.0, 1.0, nothing])]
     a_vec_x = B \ rhsx
     a_vec_y = B \ rhsy
     basic_prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
@@ -92,7 +92,7 @@ end
 @testitem "WeakMajoranaProblem" begin
     using QuantumDots, LinearAlgebra, AffineRayleighOptimization
     import QuantumDots: kitaev_hamiltonian
-    import AffineRayleighOptimization: RQ_GENEIG, RQ_CHOL, RQ_EIG, RQ_SPARSE
+    import AffineRayleighOptimization: RAYLEIGH_GENEIG, RAYLEIGH_CHOL, RAYLEIGH_EIG, RAYLEIGH_SPARSE
     c = FermionBasis(1:2; qn=QuantumDots.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
@@ -102,21 +102,22 @@ end
     γ_mb = ManyBodyMajoranaBasis(c, 3)
     Q = Majoranas.many_body_content_matrix(γ_mb)
 
-    prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, RayleighQuotient(Q))
-    sol1 = solve(prob, RQ_CHOL())
+    prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, Majoranas.RayleighQuotient(Q))
+    sol1 = solve(prob, RAYLEIGH_CHOL())
     @test all(Majoranas.test_weak_majorana_solution(prob, sol1)[1] .< 1e-10)
     @test all(Majoranas.test_weak_majorana_solution(prob, sol1)[2] .< 1e-10)
-    sol2 = solve(prob, RQ_GENEIG())
-    sol3 = solve(prob, RQ_EIG())
-    sol4 = solve(prob, RQ_SPARSE())
+    sol2 = solve(prob, RAYLEIGH_GENEIG())
+    sol3 = solve(prob, RAYLEIGH_EIG())
+    sol4 = solve(prob, RAYLEIGH_SPARSE())
     @test sol1 ≈ sol2
     @test sol1 ≈ sol3
     @test sol1 ≈ sol4
 
 
-    prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, QuadraticForm(Q))
+    prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, Majoranas.QuadraticForm(Q))
     sol3 = solve(prob)
-    @test RayleighQuotient(Q)(sol1[1]) ≈ 1
-    @test RayleighQuotient(Q)(sol1[1]) < RayleighQuotient(Q)(sol3[1])
-    @test QuadraticForm(Q)(sol1[1]) > QuadraticForm(Q)(sol3[1])
+    rq(sol, Q) = sol' * Q * sol / (sol' * sol)
+    @test rq(sol1[1], Q) ≈ 1
+    @test rq(sol1[1], Q) < rq(sol3[1], Q)
+    @test (sol1[1]'*Q*sol1[1]) > sol3[1]'*Q*sol3[1]
 end

@@ -1,4 +1,4 @@
-import AffineRayleighOptimization: RQ_EIG, RQ_GENEIG
+import AffineRayleighOptimization: RAYLEIGH_EIG, RAYLEIGH_GENEIG
 import LinearSolve: KrylovJL_MINRES
 
 """
@@ -18,8 +18,14 @@ struct WeakMajoranaProblem{M,G,C,B,PQ}
     bs::B
     projs::PQ
 end
+struct RayleighQuotient{R}
+    q::R
+end
+struct QuadraticForm{Q}
+    q::Q
+end
 
-_def_pauli_comps(::ManyBodyMajoranaBasis) = ([nothing, 1., 0., nothing], [nothing, 0., 1., nothing])
+_def_pauli_comps(::ManyBodyMajoranaBasis) = ([nothing, 1.0, 0.0, nothing], [nothing, 0.0, 1.0, nothing])
 _def_minimizer(γ::ManyBodyMajoranaBasis) = RayleighQuotient(many_body_content_matrix(γ))
 function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minimizer=_def_minimizer(γ), gs_pauli_comps_vec=_def_pauli_comps(γ))
     P, Q = projection_ops(oddvecs, evenvecs)
@@ -86,13 +92,13 @@ function test_weak_majorana_solution(prob::WeakMajoranaProblem, sols)
     return gs_test, exc_test
 end
 
-function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg=AffineRayleighOptimization.RQ_EIG())
-    sols = [solve(ConstrainedRayleighQuotientProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
+function solve(prob::WeakMajoranaProblem{<:RayleighQuotient}, alg=AffineRayleighOptimization.RAYLEIGH_EIG())
+    sols = [solve(RayleighProblem(prob.minimizer.q, prob.constraints, b), alg) for b in prob.bs]
     _return_sol(prob, sols)
 end
 
 function solve(prob::WeakMajoranaProblem{<:QuadraticForm}, alg=KrylovJL_MINRES())
-    sols = [solve(ConstrainedQuadraticFormProblem(prob.minimizer, prob.constraints, b), alg) for b in prob.bs]
+    sols = [solve(QuadraticProblem(prob.minimizer.q, prob.constraints, b), alg) for b in prob.bs]
     _return_sol(prob, sols)
 end
 
@@ -100,14 +106,14 @@ struct WM_BACKSLASH end
 struct WM_BACKSLASH_SPARSE end
 
 function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH)
-    sols = [prob.constraints\b for b in prob.bs]
+    sols = [prob.constraints \ b for b in prob.bs]
     _return_sol(prob, sols)
 end
 
 function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH_SPARSE)
-    sols = [sparse(prob.constraints)\b for b in prob.bs]
+    sols = [sparse(prob.constraints) \ b for b in prob.bs]
     _return_sol(prob, sols)
 end
 
-_return_sol(prob::WeakMajoranaProblem{M,<:ManyBodyMajoranaBasis}, sols) where M = sols
-_return_sol(prob::WeakMajoranaProblem{M,<:HamiltonianBasis}, sols) where M = only(sols)
+_return_sol(prob::WeakMajoranaProblem{M,<:ManyBodyMajoranaBasis}, sols) where {M} = sols
+_return_sol(prob::WeakMajoranaProblem{M,<:HamiltonianBasis}, sols) where {M} = only(sols)
