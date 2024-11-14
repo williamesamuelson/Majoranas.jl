@@ -1,4 +1,4 @@
-abstract type AbstractMajoranaBasis end
+abstract type AbstractMajoranaBasis <: QuantumDots.AbstractBasis end
 using QuantumDots: nbr_of_fermions
 
 """
