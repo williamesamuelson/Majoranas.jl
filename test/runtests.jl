@@ -17,15 +17,15 @@ using TestItemRunner
             @test γ_op * γ_test + γ_test * γ_op == 0 * I
         end
     end
-    for fermion_label in QuantumDots.labels(c)
+    for fermion_label in keys(c)
         @test 1 / 2 * (γ[(fermion_label..., :+)] - 1im * γ[(fermion_label..., :-)]) == c[fermion_label...]
     end
     γ_mb = ManyBodyMajoranaBasis(γ)
     # nbr of many body basis operators should be binomial(8,1) + binomial(8,3) + ... + binomial(8,7)
     @test length(γ_mb) == mapreduce(l -> binomial(length(γ), l), +, 1:2:length(γ))
     random_index = ceil(Int, length(γ_mb) * rand())
-    test_label = labels(γ_mb)[random_index]
-    γ_mb_test = γ_mb[random_index]
+    test_label = collect(keys(γ_mb))[random_index]
+    γ_mb_test = γ_mb[test_label]
     @test γ_mb_test == 1im^(length(test_label) * (length(test_label) - 1) / 2) * mapreduce(label -> γ[label], *, test_label)
     @test γ_mb_test' == γ_mb_test
     @test γ_mb_test^2 == I

@@ -17,10 +17,10 @@ end
 function ProjectedHamiltonianBasis(γ::SingleParticleMajoranaBasis, parity::Int)
     H = HamiltonianBasis(γ)
     inds = γ.fermion_basis.symmetry.qntoinds[parity]
-    projected_mats = map(mat->mat[inds, inds], values(H.dict))
+    projected_mats = map(mat->mat[inds, inds], values(H))
     # not all matrices are independent when projected
     independent_inds = [(1:div(length(H), 2)-1)..., length(H)] # is this really correct?
-    independent_labels = labels(H)[independent_inds]
+    independent_labels = collect(keys(H))[independent_inds]
     return HamiltonianBasis(OrderedDict(zip(independent_labels, projected_mats[independent_inds])), H.fermion_basis)
     # return HamiltonianBasis(QuantumDots.Dictionary(independent_labels, projected_mats[independent_inds]), H.fermion_basis)
 end
@@ -48,7 +48,7 @@ end
     H = HamiltonianBasis(γ)
     Hp = ProjectedHamiltonianBasis(γ, -1)
     # check setdiff(fullmajorana, Hp_labels) and see that none come up in Hp_labels
-    setdiffs = [setdiff(labels(H)[end-1], lab) for lab in labels(Hp)]
-    @test !all(setdiffs .∋ labels(Hp))
+    setdiffs = [setdiff(collect(keys(H))[end-1], lab) for lab in keys(Hp)]
+    @test !all(setdiffs .∋ collect(keys(Hp)))
     @test length(Hp) == 2^(N-2)
 end
