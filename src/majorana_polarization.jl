@@ -22,10 +22,10 @@ function find_label_indices(maj_labels, region_label)
 end
 
 function find_sp_labels(maj_basis::ManyBodyMajoranaBasis)
-    sp_indices = findall(labelvec -> length(labelvec) == 1, labels(maj_basis))
-    return only.(labels(maj_basis)[sp_indices])
+    sp_indices = findall(labelvec -> length(labelvec) == 1, collect(keys(maj_basis))) # why do I have to collect here?
+    return only.(collect(keys(maj_basis))[sp_indices])
 end
-find_sp_labels(maj_basis::SingleParticleMajoranaBasis) = labels(maj_basis)
+find_sp_labels(maj_basis::SingleParticleMajoranaBasis) = collect(keys(maj_basis))
 
 @testitem "find_region_indices" begin
     using QuantumDots
@@ -77,5 +77,5 @@ end
 
     γ1 = γ_mb[((1,:↑,:+),)] + γ_mb[((2,:↑,:+),)]
     γ2 = γ_mb[((1,:↓,:-),)] + γ_mb[((2,:↓,:-),)]
-    map(lab->test_mp((γ1, γ2), γ_mb, [lab], 1), QuantumDots.labels(cbd1))
+    map(lab->test_mp((γ1, γ2), γ_mb, [lab], 1), collect(keys(cbd1)))
 end

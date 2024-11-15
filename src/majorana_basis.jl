@@ -60,6 +60,14 @@ function full_many_body_majorana_labels(single_particle_labels, combination_leng
     mapreduce(length->collect(combinations(single_particle_labels, length)), vcat, combination_lengths)
 end
 
+@testitem "Many Body Majorana labels" begin
+    using QuantumDots
+    c = FermionBasis(1:2)
+    γ = SingleParticleMajoranaBasis(c)
+    labels = Majoranas.full_many_body_majorana_labels(collect(keys(γ)), [2])
+    @test length(labels) == binomial(4, 2) # Number of pairs from 4 Majoranas
+end
+
 """
 To ensure that individual basis elememts square to one and are Hermitian.
 """
@@ -76,7 +84,7 @@ Constructs a many body Majorana basis from a single particle basis.
 struct ManyBodyMajoranaBasis{M}<:AbstractMajoranaBasis
     dict::M
     function ManyBodyMajoranaBasis(γ::SingleParticleMajoranaBasis, combination_lengths::AbstractVector)
-        many_body_labels = full_many_body_majorana_labels(labels(γ), combination_lengths)
+        many_body_labels = full_many_body_majorana_labels(collect(keys(γ)), combination_lengths)
         γmb = map(labels->labels_to_manybody_majorana(labels, γ), many_body_labels)
         d = OrderedDict(zip(Tuple.(many_body_labels), γmb))
         new{typeof(d)}(d)
@@ -108,10 +116,10 @@ end
     @test all(values(γ_sp.dict) .== values(ManyBodyMajoranaBasis(γ_sp, 1).dict))
     @test γ_sp[1,:+] == γ_sp[(1,:+)]
     γ3 = ManyBodyMajoranaBasis(c, 3:3)
-    nbr_of_sp_majoranas(M, i) = length(labels(M)[i])
+    nbr_of_sp_majoranas(M, i) = length(collect(keys(M))[i])
     @test all([nbr_of_sp_majoranas(γ3, i) == 3 for i in 1:length(γ3)])
     γ_new_label = ManyBodyMajoranaBasis(c, 3, (:x, :y))
-    sp_labels = [label for labelvec in labels(γ_new_label) for label in labelvec]
+    sp_labels = [label for labelvec in keys(γ_new_label) for label in labelvec]
     @test all([any((:x, :y) .== label[end]) for label in sp_labels])
 
     γ_sp = SingleParticleMajoranaBasis(6)
@@ -119,20 +127,13 @@ end
     @test length(γ_mb) == 32
 end
 
-### with SPMajoranas, use several arguments to index (or just the int for fermion free majoranas)
-#=Base.getindex(M::SingleParticleMajoranaBasis, i::Int) = M.dict[i] # for fermion free majoranas=#
-#=Base.getindex(M::SingleParticleMajoranaBasis, args...) = M.dict[args]=#
-#=Base.getindex(M::SingleParticleMajoranaBasis, t::Tuple)= M.dict[t]=#
 Base.getindex(M::AbstractMajoranaBasis, label)= M.dict[label]
 Base.getindex(M::AbstractMajoranaBasis, labels...)= M.dict[labels]
-### with MBMajoranas, use vector with labels or Int to index
-#=Base.getindex(M::ManyBodyMajoranaBasis, t::AbstractVector)= M.dict[t]=#
-Base.getindex(M::ManyBodyMajoranaBasis, i::Int)= M.dict[labels(M)[i]] # do we need this?
 
 Base.iterate(M::AbstractMajoranaBasis) = iterate(values(M.dict))
 Base.iterate(M::AbstractMajoranaBasis, state) = iterate(values(M.dict), state)
 Base.keys(M::AbstractMajoranaBasis) = keys(M.dict)
-Base.values(M::AbstractMajoranaBasis) = values(M.dict)
+#=Base.values(M::AbstractMajoranaBasis) = values(M.dict)=#
 Base.length(M::AbstractMajoranaBasis) = length(M.dict)
-labels(M::AbstractMajoranaBasis) = collect(keys(M))
+#=labels(M::AbstractMajoranaBasis) = collect(keys(M))=#
 #=nbr_of_majoranas(c::FermionBasis) = 2*nbr_of_fermions(c)=#
