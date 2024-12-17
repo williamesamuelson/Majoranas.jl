@@ -7,6 +7,7 @@ using Combinatorics
 using TestItems
 using SparseArrays
 using OrderedCollections
+
 import AffineRayleighOptimization: solve
 import QuantumDots: majorana_polarization
 
@@ -17,6 +18,7 @@ include("weak_majorana_utils.jl")
 include("weak_majorana_constraints.jl")
 include("weak_majorana_problem.jl")
 include("majorana_polarization.jl")
+include("majorana_metrics.jl")
 
 export SingleParticleMajoranaBasis, ManyBodyMajoranaBasis, HamiltonianBasis, ProjectedHamiltonianBasis, labels, coeffs_to_dict
 export WeakMajoranaProblem
