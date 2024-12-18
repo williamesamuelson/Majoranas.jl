@@ -4,7 +4,7 @@ mutable struct Hamiltonian{B}
     # QuantumDots.DiagonalizedHamiltonian also stores original ham :(
     diagham::Union{Nothing, QuantumDots.DiagonalizedHamiltonian}
     function Hamiltonian(ham, basis)
-        if !(QuantumDots.symmetry(basis).conserved_quantity isa ParityConservation)
+        if !(QuantumDots.symmetry(basis) isa QuantumDots.AbelianFockSymmetry{<:Any, <:Any, <:Any, ParityConservation})
             throw(ArgumentError("Basis must have a parity quantum number"))
         end
         return new{typeof(basis)}(ham, basis, nothing)
@@ -42,8 +42,10 @@ end
     import QuantumDots: kitaev_hamiltonian
     import Majoranas: Hamiltonian, MP, diagonalize!, get_ground_states, isdiagonalized
     cpmm = FermionBasis(1:2; qn=ParityConservation())
+    cpmm_noparity = FermionBasis(1:2)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=0.0, t=1.0, Δ=1.0)), cpmm)
     H = Hamiltonian(pmmham, cpmm)
+    @test_throws ArgumentError Hamiltonian(pmmham, cpmm_noparity)
     @test !isdiagonalized(H)
     diagonalize!(H)
     @test isdiagonalized(H)
