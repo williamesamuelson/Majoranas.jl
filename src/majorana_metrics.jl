@@ -1,23 +1,21 @@
 mutable struct Hamiltonian{B}
-    ham::QuantumDots.BlockDiagonal
-    basis::B
-    # QuantumDots.DiagonalizedHamiltonian also stores original ham :(
-    diagham::Union{Nothing, QuantumDots.DiagonalizedHamiltonian}
+    ham::Union{QuantumDots.BlockDiagonal, QuantumDots.DiagonalizedHamiltonian}
+    const basis::B
     function Hamiltonian(ham, basis)
         if !(QuantumDots.symmetry(basis) isa QuantumDots.AbelianFockSymmetry{<:Any, <:Any, <:Any, ParityConservation})
             throw(ArgumentError("Basis must have a parity quantum number"))
         end
-        return new{typeof(basis)}(ham, basis, nothing)
+        return new{typeof(basis)}(ham, basis)
     end
 end
 
-diagonalize!(H::Hamiltonian) = (H.diagham = diagonalize(H.ham))
+diagonalize!(H::Hamiltonian) = (H.ham = diagonalize(H.ham))
 get_system_basis(H::Hamiltonian) = H.basis
-isdiagonalized(H::Hamiltonian) = !isnothing(H.diagham)
+isdiagonalized(H::Hamiltonian) = (H.ham isa QuantumDots.DiagonalizedHamiltonian)
 
 function get_ground_states(H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
-    fullsectors = QuantumDots.blocks(H.diagham; full=true)
+    fullsectors = QuantumDots.blocks(H.ham; full=true)
     oddvec = first(eachcol(fullsectors[1].vectors))
     evenvec = first(eachcol(fullsectors[2].vectors))
     return oddvec, evenvec
