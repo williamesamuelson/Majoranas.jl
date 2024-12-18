@@ -82,7 +82,7 @@ end
     import Majoranas: Hamiltonian, MP, LD, LF, diagonalize!, ground_states, isdiagonalized, energy_info
     cpmm = FermionBasis(1:2; qn=ParityConservation())
     cpmm_noparity = FermionBasis(1:2)
-    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=0.0, t=1.0, Δ=1.0)), cpmm)
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im*pi/3), Δ=2.0, V=2.0)), cpmm)
     H = Hamiltonian(pmmham, cpmm)
     @test_throws ArgumentError Hamiltonian(pmmham, cpmm_noparity)
     @test !isdiagonalized(H)
