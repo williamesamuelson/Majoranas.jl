@@ -1,5 +1,5 @@
-mutable struct Hamiltonian{H, B}
-    ham::H
+mutable struct Hamiltonian{B}
+    ham::QuantumDots.BlockDiagonal
     basis::B
     # QuantumDots.DiagonalizedHamiltonian also stores original ham :(
     diagham::Union{Nothing, QuantumDots.DiagonalizedHamiltonian}
@@ -7,7 +7,7 @@ mutable struct Hamiltonian{H, B}
         if !(QuantumDots.symmetry(basis).conserved_quantity isa ParityConservation)
             throw(ArgumentError("Basis must have a parity quantum number"))
         end
-        return new{typeof(ham), typeof(basis)}(ham, basis, nothing)
+        return new{typeof(basis)}(ham, basis, nothing)
     end
 end
 
