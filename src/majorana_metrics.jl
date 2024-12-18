@@ -60,11 +60,26 @@ function LD(R, H::Hamiltonian)
     return norm(partial_trace(δρ, R, get_basis(H)))
 end
 
+function LF(R, H::Hamiltonian)
+    isdiagonalized(H) || diagonalize!(H)
+    oddvec, evenvec = ground_states(H)
+    γ = oddvec * evenvec' + evenvec * oddvec'
+    basis = get_basis(H)
+    block_inds = QuantumDots.blockinds(QuantumDots.symmetry(basis))
+    γ[block_inds[2], block_inds[1]] .= 0
+    basis_red = FermionBasis(R; qn=ParityConservation())
+    A_red = partial_trace(γ, basis_red, basis)
+    block_inds_red = QuantumDots.blockinds(QuantumDots.symmetry(basis_red))
+    α = A_red[block_inds_red[1], block_inds_red[2]]
+    β = - A_red[block_inds_red[2], block_inds_red[1]]'
+    return sqrt(norm(α)^2 + norm(β)^2 - 2 * abs(tr(α * β')))
+end
+
 
 @testitem "Hamiltonian struct and metrics" begin
     using QuantumDots, LinearAlgebra
     import QuantumDots: kitaev_hamiltonian
-    import Majoranas: Hamiltonian, MP, LD, diagonalize!, ground_states, isdiagonalized, energy_info
+    import Majoranas: Hamiltonian, MP, LD, LF, diagonalize!, ground_states, isdiagonalized, energy_info
     cpmm = FermionBasis(1:2; qn=ParityConservation())
     cpmm_noparity = FermionBasis(1:2)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=0.0, t=1.0, Δ=1.0)), cpmm)
@@ -77,6 +92,7 @@ end
     regions = [[1], [2], [1, 2]]
     @test all(map(R -> MP(R, H), regions) .≈ [1.0, 1.0, 0.0])
     @test all(map(R -> LD(R, H), regions) .≈ [0.0, 0.0, sqrt(2)])
+    @test all(map(R -> LF(R, H), regions) .≈ [0.0, 0.0, 1.0])
     H = Hamiltonian(pmmham, cpmm)
     @test MP(regions[1], H) ≈ 1.0 # diagonalize! is called in MP
     e_info = energy_info(H)
