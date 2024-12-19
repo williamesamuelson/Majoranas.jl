@@ -16,7 +16,7 @@ end
 get_basis(H::Hamiltonian) = H.basis
 get_ham(H::Hamiltonian) = H.dict[:H]
 Base.haskey(H::Hamiltonian, key) = haskey(H.dict, key)
-Base.getindex(H::Hamiltonian, key) = H.dict[key]
+Base.getindex(H::Hamiltonian, key...) = getindex(H.dict, key...)
 Base.setindex!(H::Hamiltonian, value, key...) = setindex!(H.dict, value, key...)
 
 diagonalize!(H::Hamiltonian) = (H[:H] = diagonalize(get_ham(H)))
@@ -128,7 +128,6 @@ function LF(R, H::Hamiltonian, γ)
 end
 
 
-
 @testitem "Majorana metrics" begin
     using QuantumDots, LinearAlgebra
     import QuantumDots: kitaev_hamiltonian
@@ -138,6 +137,7 @@ end
     H = Hamiltonian(pmmham, cpmm)
     regions = [[1], [2], [1, 2]]
     @test all(map(R -> MP(R, H), regions) .≈ [1.0, 1.0, 0.0])
+    @test haskey(H, :maj_coeffs)
     @test all(map(R -> LD(R, H), regions) .≈ [0.0, 0.0, sqrt(2)])
     @test all(map(R -> LF(R, H), regions) .≈ [0.0, 0.0, 1.0])
     H = Hamiltonian(pmmham, cpmm)
