@@ -29,6 +29,10 @@ function single_particle_majoranas(γbasis::SingleParticleMajoranaBasis, oddvec,
     return single_particle_majoranas(γbasis, coeffs)
 end
 
+function single_particle_majoranas(basis::FermionBasis, oddvec, evenvec)
+    return single_particle_majoranas(SingleParticleMajoranaBasis(basis), oddvec, evenvec)
+end
+
 function strong_majoranas(oddvecs, evenvecs, signs)
     γx = mapreduce((odd, even, s) -> (-1)^s * (odd*even' + even*odd'), +, eachcol(oddvecs), eachcol(evenvecs), signs[1])
     γy = mapreduce((odd, even, s) -> (-1)^s * 1im * (odd*even' - even*odd'), +, eachcol(oddvecs), eachcol(evenvecs), signs[2])
@@ -54,6 +58,7 @@ end
 @testitem "Majorana utils" begin
     using QuantumDots, LinearAlgebra, OrderedCollections
     import QuantumDots: kitaev_hamiltonian
+    import Majoranas: single_particle_majoranas, single_particle_majoranas_matrix_els
     c = FermionBasis(1:2; qn=QuantumDots.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
@@ -61,9 +66,10 @@ end
     oddvecs = fullsectors[1].vectors
     evenvecs = fullsectors[2].vectors
     γ = SingleParticleMajoranaBasis(c)
-    sp_matrix_els = Majoranas.single_particle_majoranas_matrix_els(γ, oddvecs[:, 1], evenvecs[:,1])
-    γx, γy = Majoranas.single_particle_majoranas(γ, sp_matrix_els)
-    @test all(Majoranas.single_particle_majoranas(γ, oddvecs[:,1], evenvecs[:, 1]) .≈ (γx, γy))
+    sp_matrix_els = single_particle_majoranas_matrix_els(γ, oddvecs[:, 1], evenvecs[:,1])
+    γx, γy = single_particle_majoranas(γ, sp_matrix_els)
+    @test all(single_particle_majoranas(c, oddvecs[:,1], evenvecs[:,1]) .≈ (γx, γy))
+    @test all(single_particle_majoranas(γ, oddvecs[:,1], evenvecs[:, 1]) .≈ (γx, γy))
     γ_mb = ManyBodyMajoranaBasis(γ, 1)
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, nothing)
     sols = solve(prob, Majoranas.WM_BACKSLASH())
