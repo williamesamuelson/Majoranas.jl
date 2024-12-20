@@ -108,7 +108,6 @@ Base.transpose(b::BasisArray) = BasisArray(transpose(b.parent), b.basis)
 Base.zero(x::BasisArray) = BasisArray(zero(x.parent), x.basis)
 Base.one(x::BasisArray) = BasisArray(one(x.parent), x.basis)
 
-QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper) = wedge(bs, b.basis)
 QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::FermionBasis) = BasisArray(wedge(map(b -> b.parent, bs), map(b -> b.basis, bs), b), b)
 QuantumDots.blockdiagonal(b::BasisArray) = BasisArray(blockdiagonal(b.parent, b.basis), b.basis)
 QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::QuantumDots.AbstractBasis) = BasisArray(partial_trace(m.parent, bsub, m.basis), bsub)
@@ -143,7 +142,7 @@ QuantumDots.nbr_of_fermions(b::ManyBodyBasisArrayWrapper) = nbr_of_fermions(b.ba
 Base.eltype(b::ManyBodyBasisArrayWrapper) = eltype(b.basis)
 Base.keytype(b::ManyBodyBasisArrayWrapper) = keytype(b.basis)
 BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.basis)
-
+QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper) = wedge(bs, b.basis)
 
 @testitem "BasisArray" begin
     using Majoranas: BasisArray, ManyBodyBasisArrayWrapper
