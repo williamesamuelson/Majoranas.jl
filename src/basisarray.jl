@@ -152,7 +152,7 @@ BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.bas
 # end
 
 @testitem "BasisArray" begin
-    using Majoranas: BasisArray, basisarrays, ManyBodyBasisArrayWrapper
+    using Majoranas: BasisArray, ManyBodyBasisArrayWrapper
     using QuantumDots, LinearAlgebra
     qn = ParityConservation()
     c1 = FermionBasis(1:1; qn) |> ManyBodyBasisArrayWrapper
