@@ -1,4 +1,5 @@
 
+# Based on https://github.com/JuliaArrays/ReadOnlyArrays.jl
 using Base: @propagate_inbounds
 
 struct BasisArray{T,N,A,B} <: AbstractArray{T,N}
@@ -27,7 +28,6 @@ const BMatrix{T,P} = BasisArray{T,2,P}
 BMatrix(parent::AbstractMatrix, basis) = BasisArray(parent, basis)
 
 #--------------------------------------
-# https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-parentay
 
 Base.size(x::BasisArray, args...) = size(x.parent, args...)
 
@@ -75,58 +75,100 @@ Base.stride(x::BasisArray, i::Int) = stride(x.parent, i)
 Base.parent(x::BasisArray) = x.parent
 
 # multiplication
-# Base.:*(x::BasisArray, y::AbstractArray) = BasisArray(x.parent .* y, x.basis)
-# Base.:*(x::AbstractArray, y::BasisArray) = BasisArray(x .* y.parent, y.basis)
 Base.:*(x::BasisArray, y::BasisArray) = x.basis == y.basis ? BasisArray(x.parent * y.parent, x.basis) : throw(ArgumentError("Basis mismatch"))
 Base.:*(x::BasisArray, y::Number) = BasisArray(x.parent .* y, x.basis)
 Base.:*(x::Number, y::BasisArray) = BasisArray(x .* y.parent, y.basis)
 
 # addition
-Base.:+(x::BasisArray, y::UniformScaling) = BasisArray(x.parent + y, x.basis)
-Base.:+(x::UniformScaling, y::BasisArray) = BasisArray(x + y.parent, y.basis)
+# MatrixTypes = Union{<:UniformScaling,<:Matrix,<:SparseArrays.SparseMatrixCSC}
+# VecTypes = Union{UniformScaling,Array,SparseMatrixCSC,SparseVector}
+Base.:+(x::BMatrix, y::UniformScaling) = BasisArray(x.parent + y, x.basis)
+Base.:+(x::UniformScaling, y::BMatrix) = BasisArray(x + y.parent, y.basis)
+Base.:+(x::BasisArray, y::Array) = BasisArray(x.parent + y, x.basis)
+Base.:+(x::Array, y::BasisArray) = BasisArray(x + y.parent, y.basis)
+Base.:+(x::BMatrix, y::SparseMatrixCSC) = BasisArray(x.parent + y, x.basis)
+Base.:+(x::SparseMatrixCSC, y::BMatrix) = BasisArray(x + y.parent, y.basis)
+Base.:+(x::BVector, y::SparseVector) = BasisArray(x.parent + y, x.basis)
+Base.:+(x::SparseVector, y::BVector) = BasisArray(x + y.parent, y.basis)
 Base.:+(x::BasisArray, y::BasisArray) = x.basis == y.basis ? BasisArray(x.parent + y.parent, x.basis) : throw(ArgumentError("Basis mismatch"))
-Base.:+(x::BasisArray, y::Number) = BasisArray(x.parent + y, x.basis)
-Base.:+(x::Number, y::BasisArray) = BasisArray(x + y.parent, y.basis)
 
 # subtraction
-Base.:-(x::BasisArray, y::UniformScaling) = BasisArray(x.parent - y, x.basis)
-Base.:-(x::UniformScaling, y::BasisArray) = BasisArray(x - y.parent, y.basis)
+Base.:-(x::BMatrix, y::UniformScaling) = BasisArray(x.parent - y, x.basis)
+Base.:-(x::UniformScaling, y::BMatrix) = BasisArray(x - y.parent, y.basis)
+Base.:-(x::BasisArray, y::Array) = BasisArray(x.parent - y, x.basis)
+Base.:-(x::Array, y::BasisArray) = BasisArray(x - y.parent, y.basis)
+Base.:-(x::BMatrix, y::SparseMatrixCSC) = BasisArray(x.parent - y, x.basis)
+Base.:-(x::SparseMatrixCSC, y::BMatrix) = BasisArray(x - y.parent, y.basis)
+Base.:-(x::BVector, y::SparseVector) = BasisArray(x.parent - y, x.basis)
+Base.:-(x::SparseVector, y::BVector) = BasisArray(x - y.parent, y.basis)
 Base.:-(x::BasisArray, y::BasisArray) = x.basis == y.basis ? BasisArray(x.parent - y.parent, x.basis) : throw(ArgumentError("Basis mismatch"))
 Base.:-(x::BasisArray) = BasisArray(-x.parent, x.basis)
-Base.:-(x::BasisArray, y::Number) = BasisArray(x.parent - y, x.basis)
 Base.:-(x::Number, y::BasisArray) = BasisArray(x - y.parent, y.basis)
-
 
 Base.adjoint(b::BasisArray) = BasisArray(adjoint(b.parent), b.basis)
 Base.transpose(b::BasisArray) = BasisArray(transpose(b.parent), b.basis)
 Base.zero(x::BasisArray) = BasisArray(zero(x.parent), x.basis)
 Base.one(x::BasisArray) = BasisArray(one(x.parent), x.basis)
 
+QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper) = wedge(bs, b.basis)
 QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::FermionBasis) = BasisArray(wedge(map(b -> b.parent, bs), map(b -> b.basis, bs), b), b)
 QuantumDots.blockdiagonal(b::BasisArray) = BasisArray(blockdiagonal(b.parent, b.basis), b.basis)
 QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::QuantumDots.AbstractBasis) = BasisArray(partial_trace(m.parent, bsub, m.basis), bsub)
 
+struct ManyBodyBasisArrayWrapper{B<:QuantumDots.AbstractManyBodyBasis} <: QuantumDots.AbstractManyBodyBasis
+    basis::B
+end
+Base.getindex(b::ManyBodyBasisArrayWrapper, i) = BasisArray(b.basis[i], b.basis)
+Base.getindex(b::ManyBodyBasisArrayWrapper, args...) = BasisArray(b.basis[args], b.basis)
+Base.keys(b::ManyBodyBasisArrayWrapper) = keys(b.basis)
+Base.show(io::IO, ::MIME"text/plain", b::ManyBodyBasisArrayWrapper) = show(io, b)
+function Base.show(io::IO, b::ManyBodyBasisArrayWrapper)
+    print(io, "ManyBodyBasisArrayWrapper{\n")
+    show(b.basis)
+    print(io, "}")
+end
+function Base.iterate(b::ManyBodyBasisArrayWrapper)
+    i = iterate(b.basis)
+    isnothing(i) && return i
+    x, s = i
+    (BasisArray(x, b.basis), s)
+end
+function Base.iterate(b::ManyBodyBasisArrayWrapper, state)
+    i = iterate(b.basis, state)
+    isnothing(i) && return i
+    x, s = i
+    (BasisArray(x, b.basis), s)
+end
+Base.length(b::ManyBodyBasisArrayWrapper) = length(b.basis)
+QuantumDots.symmetry(b::ManyBodyBasisArrayWrapper) = QuantumDots.symmetry(b.basis)
+QuantumDots.nbr_of_fermions(b::ManyBodyBasisArrayWrapper) = nbr_of_fermions(b.basis)
+Base.eltype(b::ManyBodyBasisArrayWrapper) = eltype(b.basis)
+Base.keytype(b::ManyBodyBasisArrayWrapper) = keytype(b.basis)
+BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.basis)
+
+# function basisarrays(b::FermionBasis{M,D,S}) where {M,D,S}
+#     newdict = QuantumDots.OrderedCollections.OrderedDict([k => BasisArray(v, b) for (k, v) in pairs(b.dict)])
+#     b = FermionBasis{M,typeof(newdict),S}(newdict, b.symmetry)
+# end
 
 @testitem "BasisArray" begin
-    using Majoranas: BasisArray
+    using Majoranas: BasisArray, basisarrays, ManyBodyBasisArrayWrapper
     using QuantumDots, LinearAlgebra
     qn = ParityConservation()
-    c1 = FermionBasis(1:1; qn)
-    c2 = FermionBasis(2:2; qn)
-    c12 = FermionBasis(1:2; qn)
+    c1 = FermionBasis(1:1; qn) |> ManyBodyBasisArrayWrapper
+    c2 = FermionBasis(2:2; qn) |> ManyBodyBasisArrayWrapper
+    c12 = FermionBasis(1:2; qn) |> ManyBodyBasisArrayWrapper
     v = BasisArray(rand(2), c1)
-    f1 = BasisArray(c1[1], c1)
-    @test f1 * v isa BasisArray
-    @test f1 + c1[1] == 2 * f1
-    @test f1 == f1
-    @test iszero(f1 - f1)
-    @test (f1 * I * f1' * I) * 2 + 2I + f1 - 5 * f1 isa BasisArray
 
-    f2 = BasisArray(c2[2], c2)
-    @test wedge([f1, f2], c12) isa BasisArray
-    @test wedge([f1, f2], c12) == c12[2] * c12[1]
+    @test c1[1] * v isa BasisArray
+    @test c1[1] + c1[1].parent == 2 * c1[1]
+    @test c1[1] == c1[1]
+    @test iszero(c1[1] - c1[1])
+    @test (c1[1] * I * c1[1]' * I) * 2 + 2I + c1[1].parent - 5 * c1[1] isa BasisArray
 
-    rho = BasisArray(c12[1]' * c12[1], c12)
+    @test wedge([c1[1], c2[2]], c12) isa BasisArray
+    @test wedge([c1[1], c2[2]], c12) == c12[2] * c12[1]
+    rho = c12[1]' * c12[1]
     @test partial_trace(rho, c1) isa BasisArray
 
     @test length(blockdiagonal(rho).parent.blocks) == 2
