@@ -78,6 +78,12 @@ function excgap(H::Hamiltonian)
     return energy_info(H).excgap
 end
 
+function spectrum_weakness(H::Hamiltonian)
+    haskey(H, :energies) && return spectrum_weakness(H[:energies])
+    return spectrum_weakness(energy_info(H).energies)
+end
+spectrum_weakness(energies) = norm(energies[1] .- energies[2])
+
 function majorana_coefficients(H::Hamiltonian)
     haskey(H, :maj_coeffs) && return H[:maj_coeffs]
     isdiagonalized(H) || diagonalize!(H)
@@ -104,18 +110,6 @@ function LF(R, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     γ = oddvec * evenvec' + evenvec * oddvec'
-    return LF(R, H, γ)
-end
-
-# perhaps useful to compare with GS LF
-#=function single_particle_LF(R, H::Hamiltonian)=#
-#=    isdiagonalized(H) || diagonalize!(H)=#
-#=    oddvec, evenvec = ground_states(H)=#
-#=    γ = single_particle_majoranas(get_basis(H), oddvec, evenvec)[1]=#
-#=    return LF(R, H, γ)=#
-#=end=#
-
-function LF(R, H::Hamiltonian, γ)
     basis = get_basis(H)
     block_inds = QuantumDots.blockinds(QuantumDots.symmetry(basis))
     γ[block_inds[2], block_inds[1]] .= 0
@@ -127,11 +121,22 @@ function LF(R, H::Hamiltonian, γ)
     return sqrt(norm(α)^2 + norm(β)^2 - 2 * abs(tr(α * β')))
 end
 
+# perhaps useful to compare with GS LF, only for real ham
+function single_particle_LF(R, H::Hamiltonian)
+    eltype(get_ham(H)) <: Real || throw(ArgumentError("Hamiltonian must be real"))
+    isdiagonalized(H) || diagonalize!(H)
+    γs = single_particle_majoranas(get_basis(H), ground_states(H)...)
+    basis = get_basis(H)
+    basis_red = FermionBasis(R; qn=ParityConservation())
+    red_γs = map(γ -> partial_trace(γ, basis_red, basis), γs)
+    return minimum(norm.(red_γs))
+end
 
 @testitem "Majorana metrics" begin
     using QuantumDots, LinearAlgebra
     import QuantumDots: kitaev_hamiltonian
-    import Majoranas: Hamiltonian, MP, LD, LF, ground_states, energy_info, deg_ratio, excgap
+    import Majoranas: Hamiltonian, ground_states, energy_info, deg_ratio, excgap, spectrum_weakness
+    import Majoranas: MP, LD, LF, single_particle_LF
     cpmm = FermionBasis(1:2; qn=ParityConservation())
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im*pi/3), Δ=2.0, V=2.0)), cpmm)
     H = Hamiltonian(pmmham, cpmm)
@@ -147,5 +152,11 @@ end
     @test e_info.deg_ratio ≈ deg_ratio(H) ≈ H[:deg_ratio] ≈ 0 # call diagonalize! again
     H = Hamiltonian(pmmham, cpmm)
     @test e_info.excgap ≈ excgap(H) ≈ H[:excgap] ≈ 2.0
+    H = Hamiltonian(pmmham, cpmm)
+    @test spectrum_weakness(e_info.energies) ≈ spectrum_weakness(H) ≈ 2.0
+    pmmham_noint = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=0.0, t=1.0, Δ=1.0)), cpmm)
+    H_noint = Hamiltonian(pmmham_noint, cpmm)
+    @test spectrum_weakness(H_noint) ≈ 0.0
+    @test_throws ArgumentError single_particle_LF([1], H)
+    @test single_particle_LF([1], H_noint) < 1e-10
 end
-
