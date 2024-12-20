@@ -80,8 +80,6 @@ Base.:*(x::BasisArray, y::Number) = BasisArray(x.parent .* y, x.basis)
 Base.:*(x::Number, y::BasisArray) = BasisArray(x .* y.parent, y.basis)
 
 # addition
-# MatrixTypes = Union{<:UniformScaling,<:Matrix,<:SparseArrays.SparseMatrixCSC}
-# VecTypes = Union{UniformScaling,Array,SparseMatrixCSC,SparseVector}
 Base.:+(x::BMatrix, y::UniformScaling) = BasisArray(x.parent + y, x.basis)
 Base.:+(x::UniformScaling, y::BMatrix) = BasisArray(x + y.parent, y.basis)
 Base.:+(x::BasisArray, y::Array) = BasisArray(x.parent + y, x.basis)
@@ -146,10 +144,6 @@ Base.eltype(b::ManyBodyBasisArrayWrapper) = eltype(b.basis)
 Base.keytype(b::ManyBodyBasisArrayWrapper) = keytype(b.basis)
 BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.basis)
 
-# function basisarrays(b::FermionBasis{M,D,S}) where {M,D,S}
-#     newdict = QuantumDots.OrderedCollections.OrderedDict([k => BasisArray(v, b) for (k, v) in pairs(b.dict)])
-#     b = FermionBasis{M,typeof(newdict),S}(newdict, b.symmetry)
-# end
 
 @testitem "BasisArray" begin
     using Majoranas: BasisArray, ManyBodyBasisArrayWrapper
