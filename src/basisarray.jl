@@ -74,10 +74,6 @@ Base.stride(x::BasisArray, i::Int) = stride(x.parent, i)
 
 Base.parent(x::BasisArray) = x.parent
 
-function Base.convert(::Type{BasisArray{T,N}}, mutable_parent::AbstractArray{T,N}) where {T,N}
-    BasisArray(mutable_parent)
-end
-
 # multiplication
 # Base.:*(x::BasisArray, y::AbstractArray) = BasisArray(x.parent .* y, x.basis)
 # Base.:*(x::AbstractArray, y::BasisArray) = BasisArray(x .* y.parent, y.basis)
@@ -100,21 +96,24 @@ Base.:-(x::BasisArray) = BasisArray(-x.parent, x.basis)
 Base.:-(x::BasisArray, y::Number) = BasisArray(x.parent - y, x.basis)
 Base.:-(x::Number, y::BasisArray) = BasisArray(x - y.parent, y.basis)
 
-QuantumDots.diagonalize(b::BasisArray) = BasisArray(diagonalize(b.parent), b.basis)
-
-QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::FermionBasis) = wedge(map(b -> b.parent, bs), map(b -> b.basis, bs), b)
 
 Base.adjoint(b::BasisArray) = BasisArray(adjoint(b.parent), b.basis)
 Base.transpose(b::BasisArray) = BasisArray(transpose(b.parent), b.basis)
 Base.zero(x::BasisArray) = BasisArray(zero(x.parent), x.basis)
 Base.one(x::BasisArray) = BasisArray(one(x.parent), x.basis)
 
+QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::FermionBasis) = BasisArray(wedge(map(b -> b.parent, bs), map(b -> b.basis, bs), b), b)
+QuantumDots.blockdiagonal(b::BasisArray) = BasisArray(blockdiagonal(b.parent, b.basis), b.basis)
+QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::QuantumDots.AbstractBasis) = BasisArray(partial_trace(m.parent, bsub, m.basis), bsub)
+
+
 @testitem "BasisArray" begin
     using Majoranas: BasisArray
     using QuantumDots, LinearAlgebra
-    c1 = FermionBasis(1:1)
-    c2 = FermionBasis(2:2)
-    c12 = FermionBasis(1:2)
+    qn = ParityConservation()
+    c1 = FermionBasis(1:1; qn)
+    c2 = FermionBasis(2:2; qn)
+    c12 = FermionBasis(1:2; qn)
     v = BasisArray(rand(2), c1)
     f1 = BasisArray(c1[1], c1)
     @test f1 * v isa BasisArray
@@ -125,5 +124,12 @@ Base.one(x::BasisArray) = BasisArray(one(x.parent), x.basis)
 
     f2 = BasisArray(c2[2], c2)
     @test wedge([f1, f2], c12) isa BasisArray
-    @test wedge([f1, f2], c12) == c12[1] * c12[2]
+    @test wedge([f1, f2], c12) == c12[2] * c12[1]
+
+    rho = BasisArray(c12[1]' * c12[1], c12)
+    @test partial_trace(rho, c1) isa BasisArray
+
+    @test length(blockdiagonal(rho).parent.blocks) == 2
+
+    @test diagonalize(rho).original == rho
 end
