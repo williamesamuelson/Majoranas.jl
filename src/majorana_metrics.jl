@@ -145,6 +145,7 @@ end
     e_info = energy_info(H)
     H = Hamiltonian(pmmham, cpmm)
     @test e_info.deg_ratio ≈ deg_ratio(H) ≈ H[:deg_ratio] ≈ 0 # call diagonalize! again
+    H = Hamiltonian(pmmham, cpmm)
     @test e_info.excgap ≈ excgap(H) ≈ H[:excgap] ≈ 2.0
 end
 
