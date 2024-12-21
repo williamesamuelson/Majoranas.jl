@@ -105,6 +105,7 @@ Base.:-(x::Number, y::BasisArray) = BasisArray(x - y.parent, y.basis)
 
 Base.adjoint(b::BasisArray) = BasisArray(adjoint(b.parent), b.basis)
 Base.transpose(b::BasisArray) = BasisArray(transpose(b.parent), b.basis)
+LinearAlgebra.Hermitian(b::BasisArray) = BasisArray(Hermitian(b.parent), b.basis)
 Base.zero(x::BasisArray) = BasisArray(zero(x.parent), x.basis)
 Base.one(x::BasisArray) = BasisArray(one(x.parent), x.basis)
 
@@ -148,13 +149,15 @@ function QuantumDots.diagonalize(H::BasisArray)
     dh = diagonalize(H.parent)
     QuantumDots.DiagonalizedHamiltonian(dh.values, dh.vectors, H)
 end
-Hamiltonian(ham::BasisArray) = Hamiltonian(ham, ham.basis)
 QuantumDots._blocks(ham::BasisArray) = QuantumDots._blocks(ham.parent)
 QuantumDots.blocks(ham::BasisArray) = QuantumDots.blocks(ham.parent)
+get_basis(H::Hamiltonian{<:BasisArray}) = H.ham.basis
 
 @testitem "BasisArray" begin
-    using Majoranas: BasisArray, ManyBodyBasisArrayWrapper, Hamiltonian, LD, LF
+    using Majoranas: BasisArray, ManyBodyBasisArrayWrapper, Hamiltonian, MP, LD, LF, ground_states, energy_info, deg_ratio, excgap
     using QuantumDots, LinearAlgebra
+    import QuantumDots: kitaev_hamiltonian
+
     qn = ParityConservation()
     c1 = FermionBasis(1:1; qn) |> ManyBodyBasisArrayWrapper
     c2 = FermionBasis(2:2; qn) |> ManyBodyBasisArrayWrapper
@@ -174,15 +177,26 @@ QuantumDots.blocks(ham::BasisArray) = QuantumDots.blocks(ham.parent)
 
     @test length(blockdiagonal(rho).parent.blocks) == 2
 
-    @test diagonalize(1.0*rho).original == rho
+    @test diagonalize(1.0 * rho).original == rho
 
     ## Kitaev chain
-    N = 2
     qn = ParityConservation()
-    c = FermionBasis(1:N; qn) |> ManyBodyBasisArrayWrapper
-    params = (; t=1.0, μ=0.0, Δ=1.0, V=0.0)
-    H = Hamiltonian(blockdiagonal(QuantumDots.kitaev_hamiltonian(c; params...)))
-    @test H.dict[:H] isa BasisArray
-    @test iszero(LD((1,), H))
-    @test iszero(LF((1,), H))
+    c = FermionBasis(1:2; qn) |> ManyBodyBasisArrayWrapper
+    params = (; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)
+
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; params...)))
+    H = Hamiltonian(pmmham)
+    @test H.ham isa BasisArray
+    regions = [[1], [2], [1, 2]]
+    @test all(map(R -> MP(R, H), regions) .≈ [1.0, 1.0, 0.0])
+    @test haskey(H, :maj_coeffs)
+    @test all(map(R -> LD(R, H), regions) .≈ [0.0, 0.0, sqrt(2)])
+    @test all(map(R -> LF(R, H), regions) .≈ [0.0, 0.0, 1.0])
+    H = Hamiltonian(pmmham)
+    @test MP(regions[1], H) ≈ 1.0 # diagonalize! is called in MP
+    e_info = energy_info(H)
+    H = Hamiltonian(pmmham)
+    @test e_info.deg_ratio ≈ deg_ratio(H) ≈ H[:deg_ratio] ≈ 0 # call diagonalize! again
+    H = Hamiltonian(pmmham)
+    @test e_info.excgap ≈ excgap(H) ≈ H[:excgap] ≈ 2.0
 end
