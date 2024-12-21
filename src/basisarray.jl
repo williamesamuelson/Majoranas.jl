@@ -144,8 +144,16 @@ Base.keytype(b::ManyBodyBasisArrayWrapper) = keytype(b.basis)
 BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.basis)
 QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper) = wedge(bs, b.basis)
 
+function QuantumDots.diagonalize(H::BasisArray)
+    dh = diagonalize(H.parent)
+    QuantumDots.DiagonalizedHamiltonian(dh.values, dh.vectors, H)
+end
+Hamiltonian(ham::BasisArray) = Hamiltonian(ham, ham.basis)
+QuantumDots._blocks(ham::BasisArray) = QuantumDots._blocks(ham.parent)
+QuantumDots.blocks(ham::BasisArray) = QuantumDots.blocks(ham.parent)
+
 @testitem "BasisArray" begin
-    using Majoranas: BasisArray, ManyBodyBasisArrayWrapper
+    using Majoranas: BasisArray, ManyBodyBasisArrayWrapper, Hamiltonian, LD, LF
     using QuantumDots, LinearAlgebra
     qn = ParityConservation()
     c1 = FermionBasis(1:1; qn) |> ManyBodyBasisArrayWrapper
@@ -166,5 +174,15 @@ QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper
 
     @test length(blockdiagonal(rho).parent.blocks) == 2
 
-    @test diagonalize(rho).original == rho
+    @test diagonalize(1.0*rho).original == rho
+
+    ## Kitaev chain
+    N = 2
+    qn = ParityConservation()
+    c = FermionBasis(1:N; qn) |> ManyBodyBasisArrayWrapper
+    params = (; t=1.0, μ=0.0, Δ=1.0, V=0.0)
+    H = Hamiltonian(blockdiagonal(QuantumDots.kitaev_hamiltonian(c; params...)))
+    @test H.dict[:H] isa BasisArray
+    @test iszero(LD((1,), H))
+    @test iszero(LF((1,), H))
 end
