@@ -1,26 +1,21 @@
-struct Hamiltonian{D,B}
-    dict::D
-    basis::B
-    function Hamiltonian(ham, basis)
-        if !(QuantumDots.symmetry(basis) isa QuantumDots.AbelianFockSymmetry{<:Any, <:Any, <:Any, ParityConservation})
-            throw(ArgumentError("Basis must have a parity quantum number"))
-        end
-        if !(ham isa QuantumDots.BlockDiagonal)
-            throw(ArgumentError("Hamiltonian must be block diagonal"))
-        end
-        dict = Dict{Symbol, Any}(:H => ham) # I guess the values has to be Any?
-        return new{typeof(dict), typeof(basis)}(dict, basis)
+struct Hamiltonian{H}
+    ham::H
+    dict::Dict{Symbol,Any}
+    function Hamiltonian(ham, _dict=Dict{Symbol,Any}(); kwargs...)
+        dict = merge(_dict, kwargs)
+        return new{typeof(ham)}(ham, dict)
     end
 end
 
-get_basis(H::Hamiltonian) = H.basis
-get_ham(H::Hamiltonian) = H.dict[:H]
+get_basis(H::Hamiltonian) = H.dict[:basis]
+get_ham(H::Hamiltonian) = H.ham
+get_diag_ham(H::Hamiltonian) = isdiagonalized(H) ? H[:DH] : (diagonalize!(H); return H[:DH])
 Base.haskey(H::Hamiltonian, key) = haskey(H.dict, key)
 Base.getindex(H::Hamiltonian, key...) = getindex(H.dict, key...)
 Base.setindex!(H::Hamiltonian, value, key...) = setindex!(H.dict, value, key...)
 
-diagonalize!(H::Hamiltonian) = (H[:H] = diagonalize(get_ham(H)))
-isdiagonalized(H::Hamiltonian) = (get_ham(H) isa QuantumDots.DiagonalizedHamiltonian)
+diagonalize!(H::Hamiltonian) = (H[:DH] = diagonalize(get_ham(H))) # maybe find a better key for the diagonalized hamiltonian
+isdiagonalized(H::Hamiltonian) = haskey(H, :DH)
 
 @testitem "Hamiltonian struct" begin
     using QuantumDots, LinearAlgebra
@@ -28,13 +23,11 @@ isdiagonalized(H::Hamiltonian) = (get_ham(H) isa QuantumDots.DiagonalizedHamilto
     import Majoranas: Hamiltonian, get_basis, get_ham, diagonalize!, isdiagonalized
     cpmm = FermionBasis(1:2; qn=ParityConservation())
     cpmm_noparity = FermionBasis(1:2)
-    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im*pi/3), Δ=2.0, V=2.0)), cpmm)
-    H = Hamiltonian(pmmham, cpmm)
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), cpmm)
+    H = Hamiltonian(pmmham; basis=cpmm)
     @test get_basis(H) == cpmm
-    @test get_ham(H) == pmmham == H[:H]
+    @test get_ham(H) == pmmham == H.ham
     @test !haskey(H, :X)
-    @test_throws ArgumentError Hamiltonian(pmmham, cpmm_noparity)
-    @test_throws ArgumentError Hamiltonian(Matrix(pmmham), cpmm)
     @test !isdiagonalized(H)
     diagonalize!(H)
     @test isdiagonalized(H)
@@ -43,7 +36,7 @@ end
 function ground_states(H::Hamiltonian)
     haskey(H, :groundstates) && return H[:groundstates] # should they be stored?
     isdiagonalized(H) || diagonalize!(H)
-    sectors = QuantumDots.blocks(get_ham(H); full=true)
+    sectors = QuantumDots.blocks(get_diag_ham(H); full=true)
     oddvec = first(eachcol(sectors[1].vectors))
     evenvec = first(eachcol(sectors[2].vectors))
     H[:groundstates] = (oddvec, evenvec)
@@ -52,7 +45,7 @@ end
 
 function energy_info(H::Hamiltonian) # user won't call this?
     isdiagonalized(H) || diagonalize!(H)
-    sectors = QuantumDots.blocks(get_ham(H))
+    sectors = QuantumDots.blocks(get_diag_ham(H))
     oddvals = sectors[1].values
     evenvals = sectors[2].values
     deg = first(oddvals) - first(evenvals)
@@ -123,7 +116,7 @@ function LF(R, H::Hamiltonian, γ)
     A_red = partial_trace(γ, basis_red, basis)
     block_inds_red = QuantumDots.blockinds(QuantumDots.symmetry(basis_red))
     α = A_red[block_inds_red[1], block_inds_red[2]]
-    β = - A_red[block_inds_red[2], block_inds_red[1]]'
+    β = -A_red[block_inds_red[2], block_inds_red[1]]'
     return sqrt(norm(α)^2 + norm(β)^2 - 2 * abs(tr(α * β')))
 end
 
@@ -133,19 +126,18 @@ end
     import QuantumDots: kitaev_hamiltonian
     import Majoranas: Hamiltonian, MP, LD, LF, ground_states, energy_info, deg_ratio, excgap
     cpmm = FermionBasis(1:2; qn=ParityConservation())
-    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im*pi/3), Δ=2.0, V=2.0)), cpmm)
-    H = Hamiltonian(pmmham, cpmm)
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), cpmm)
+    H = Hamiltonian(pmmham; basis=cpmm)
     regions = [[1], [2], [1, 2]]
     @test all(map(R -> MP(R, H), regions) .≈ [1.0, 1.0, 0.0])
     @test haskey(H, :maj_coeffs)
     @test all(map(R -> LD(R, H), regions) .≈ [0.0, 0.0, sqrt(2)])
     @test all(map(R -> LF(R, H), regions) .≈ [0.0, 0.0, 1.0])
-    H = Hamiltonian(pmmham, cpmm)
+    H = Hamiltonian(pmmham; basis=cpmm)
     @test MP(regions[1], H) ≈ 1.0 # diagonalize! is called in MP
     e_info = energy_info(H)
-    H = Hamiltonian(pmmham, cpmm)
+    H = Hamiltonian(pmmham; basis=cpmm)
     @test e_info.deg_ratio ≈ deg_ratio(H) ≈ H[:deg_ratio] ≈ 0 # call diagonalize! again
-    H = Hamiltonian(pmmham, cpmm)
+    H = Hamiltonian(pmmham; basis=cpmm)
     @test e_info.excgap ≈ excgap(H) ≈ H[:excgap] ≈ 2.0
 end
-
