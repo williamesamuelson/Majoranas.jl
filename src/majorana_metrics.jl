@@ -145,10 +145,10 @@ end
     @test e_info.deg_ratio ≈ deg_ratio(H) ≈ H[:deg_ratio] ≈ 0 # call diagonalize! again
     H = Hamiltonian(pmmham; basis=cpmm)
     @test e_info.excgap ≈ excgap(H) ≈ H[:excgap] ≈ 2.0
-    H = Hamiltonian(pmmham, cpmm)
+    H = Hamiltonian(pmmham; basis=cpmm)
     @test spectrum_weakness(e_info.energies) ≈ spectrum_weakness(H) ≈ 2.0
     pmmham_noint = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=0.0, t=1.0, Δ=1.0)), cpmm)
-    H_noint = Hamiltonian(pmmham_noint, cpmm)
+    H_noint = Hamiltonian(pmmham_noint; basis=cpmm)
     @test spectrum_weakness(H_noint) ≈ 0.0
     @test_throws ArgumentError single_particle_LF([1], H)
     @test single_particle_LF([1], H_noint) < 1e-10
