@@ -1,7 +1,7 @@
 name = "Majoranas"
 uuid = "c0bcf24a-0299-47db-9920-c7627388ccab"
 authors = ["William Samuelson <william.samuelson@gmail.com> and contributors"]
-version = "1.3.0"
+version = "1.4.0"
 
 [deps]
 AffineRayleighOptimization = "afc0e0ae-cd0a-41ee-b0f5-7950de095d62"
