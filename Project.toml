@@ -13,11 +13,18 @@ QuantumDots = "312194fd-fec5-4b07-ba1c-a40d7013a56a"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
+[sources.AffineRayleighOptimization]
+url = "https://github.com/williamesamuelson/AffineRayleighOptimization.jl"
+
+[sources.QuantumDots]
+url = "https://github.com/cvsvensson/QuantumDots.jl"
+
 [compat]
 AffineRayleighOptimization = "2"
+LinearSolve = "2"
 OrderedCollections = "1.6.3"
-julia = "1.10"
 QuantumDots = "0.15"
+julia = "1.10"
 
 [extras]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -26,7 +33,3 @@ TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 
 [targets]
 test = ["Test", "TestItemRunner", "Random"]
-
-[sources]
-QuantumDots = {url = "https://github.com/cvsvensson/QuantumDots.jl"}
-AffineRayleighOptimization = {url = "https://github.com/williamesamuelson/AffineRayleighOptimization.jl"}
