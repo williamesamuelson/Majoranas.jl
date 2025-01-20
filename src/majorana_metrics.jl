@@ -121,7 +121,7 @@ LF(R, H::Hamiltonian) = LF_info(R, H).LFmin
 
 # perhaps useful to compare with GS LF, only for real ham
 function single_particle_LF(R, H::Hamiltonian)
-    eltype(get_ham(H)) <: Real || throw(ArgumentError("Hamiltonian must be real"))
+    eltype(get_ham(H)) <: Real || @warn "Hamiltonian must be real for single_particle_LF"
     isdiagonalized(H) || diagonalize!(H)
     γs = single_particle_majoranas(get_basis(H), ground_states(H)...)
     basis = get_basis(H)
@@ -155,6 +155,6 @@ end
     pmmham_noint = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=0.0, t=1.0, Δ=1.0)), cpmm)
     H_noint = Hamiltonian(pmmham_noint; basis=cpmm)
     @test spectrum_weakness(H_noint) ≈ 0.0
-    @test_throws ArgumentError single_particle_LF([1], H)
+    @test_warn "Hamiltonian must be real for single_particle_LF" single_particle_LF([1], H)
     @test single_particle_LF([1], H_noint) < 1e-10
 end
