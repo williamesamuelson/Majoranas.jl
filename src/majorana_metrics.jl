@@ -99,7 +99,7 @@ function LD(R, H::Hamiltonian)
     return norm(partial_trace(δρ, R, get_basis(H)))
 end
 
-function LF(R, H::Hamiltonian)
+function LF_info(R, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     γ = oddvec * evenvec' + evenvec * oddvec'
@@ -111,8 +111,13 @@ function LF(R, H::Hamiltonian)
     block_inds_red = QuantumDots.blockinds(QuantumDots.symmetry(basis_red))
     α = A_red[block_inds_red[1], block_inds_red[2]]
     β = -A_red[block_inds_red[2], block_inds_red[1]]'
-    return sqrt(norm(α)^2 + norm(β)^2 - 2 * abs(tr(α * β')))
+    α2_plus_β2 = norm(α)^2 + norm(β)^2
+    LFmin, LFmax = map(sgn -> sqrt(α2_plus_β2 + sgn * 2 * abs(tr(α * β'))), (-1, 1))
+    prod = LFmin * LFmax
+    return (;LFmin, prod)
 end
+
+LF(R, H::Hamiltonian) = LF_info(R, H).LFmin
 
 # perhaps useful to compare with GS LF, only for real ham
 function single_particle_LF(R, H::Hamiltonian)
