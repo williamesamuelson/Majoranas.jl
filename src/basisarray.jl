@@ -171,7 +171,7 @@ get_basis(H::Hamiltonian{<:BasisArray}) = H.ham.basis
     @test (c1[1] * I * c1[1]' * I) * 2 + 2I + c1[1].parent - 5 * c1[1] isa BasisArray
 
     @test wedge([c1[1], c2[2]], c12) isa BasisArray
-    @test wedge([c1[1], c2[2]], c12) == c12[2] * c12[1]
+    @test wedge([c1[1], c2[2]], c12) == c12[1] * c12[2]
     rho = c12[1]' * c12[1]
     @test partial_trace(rho, c1) isa BasisArray
 
