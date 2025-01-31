@@ -119,6 +119,17 @@ end
 
 LF(R, H::Hamiltonian) = LF_info(R, H).LFmin
 
+function cR(R, H::Hamiltonian)
+    isdiagonalized(H) || diagonalize!(H)
+    oddvec, evenvec = ground_states(H)
+    γ = oddvec * evenvec' + evenvec * oddvec'
+    basis = get_basis(H)
+    P = QuantumDots.parityoperator(basis)
+    basis_red = FermionBasis(R; qn=ParityConservation())
+    c = (I + P) * γ
+    return norm(partial_trace(c, basis_red, basis))
+end
+
 # perhaps useful to compare with GS LF, only for real ham
 function single_particle_LF(R, H::Hamiltonian)
     eltype(get_ham(H)) <: Real || @warn "Hamiltonian must be real for single_particle_LF"
