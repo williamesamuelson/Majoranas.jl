@@ -119,7 +119,7 @@ end
 
 LF(R, H::Hamiltonian) = LF_info(R, H).LFmin
 
-function cR(R, H::Hamiltonian)
+function creduced(R, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     γ = oddvec * evenvec' + evenvec * oddvec'
