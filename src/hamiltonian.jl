@@ -3,8 +3,8 @@ struct HamiltonianBasis{D,B} <: AbstractMajoranaBasis
     fermion_basis::B
 end
 
-function HamiltonianBasis(γ::SingleParticleMajoranaBasis)
-    dict = ManyBodyMajoranaBasis(γ, 2:2:length(γ)).dict # 0 doesn't have to be in right?
+function HamiltonianBasis(γ::SingleParticleMajoranaBasis, max_combination_length::Int=length(γ))
+    dict = ManyBodyMajoranaBasis(γ, 2:2:max_combination_length).dict
     id_mat = copyto!(similar(first(dict)[2], size(first(dict)[2])), I)
     vd = collect(values(dict))
     kd = keys(dict)
@@ -30,7 +30,7 @@ end
     import QuantumDots: kitaev_hamiltonian
     c = FermionBasis(1:3; qn=QuantumDots.parity)
     γ = SingleParticleMajoranaBasis(c)
-    ham_basis = HamiltonianBasis(γ)
+    ham_basis = HamiltonianBasis(γ, 4)
     μ, t, Δ, V = rand(4)
     pmmham = kitaev_hamiltonian(c; μ, t, Δ, V)
     dict = Majoranas.matrix_to_dict(ham_basis, pmmham)
