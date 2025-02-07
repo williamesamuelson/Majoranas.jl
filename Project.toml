@@ -21,8 +21,8 @@ url = "https://github.com/cvsvensson/QuantumDots.jl"
 
 [compat]
 AffineRayleighOptimization = "2"
-LinearSolve = "2"
 Combinatorics = "1"
+LinearSolve = "2, 3"
 OrderedCollections = "1.6.3"
 QuantumDots = "0.16"
 TestItems = "1"
