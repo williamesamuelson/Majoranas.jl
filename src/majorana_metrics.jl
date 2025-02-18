@@ -55,6 +55,11 @@ function energy_info(H::Hamiltonian) # user won't call this?
     return einfo
 end
 
+function degeneracy(H::Hamiltonian)
+    haskey(H, :deg) && return H[:deg]
+    return energy_info(H).deg
+end
+
 function deg_ratio(oddvals, evenvals)
     δE = first(oddvals) - first(evenvals)
     Δ = min(oddvals[2], evenvals[2]) - min(first(oddvals), first(evenvals))
@@ -144,7 +149,7 @@ end
 @testitem "Majorana metrics" begin
     using QuantumDots, LinearAlgebra
     import QuantumDots: kitaev_hamiltonian
-    import Majoranas: Hamiltonian, ground_states, energy_info, deg_ratio, excgap, spectrum_weakness
+    import Majoranas: Hamiltonian, ground_states, energy_info, degeneracy, deg_ratio, excgap, spectrum_weakness
     import Majoranas: MP, LD, LF, single_particle_LF
     cpmm = FermionBasis(1:2; qn=ParityConservation())
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), cpmm)
@@ -159,6 +164,7 @@ end
     e_info = energy_info(H)
     H = Hamiltonian(pmmham; basis=cpmm)
     @test e_info.deg_ratio ≈ deg_ratio(H) ≈ H[:deg_ratio] ≈ 0 # call diagonalize! again
+    @test degeneracy(H) ≈ 0
     H = Hamiltonian(pmmham; basis=cpmm)
     @test e_info.excgap ≈ excgap(H) ≈ H[:excgap] ≈ 2.0
     H = Hamiltonian(pmmham; basis=cpmm)
