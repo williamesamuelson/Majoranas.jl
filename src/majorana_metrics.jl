@@ -62,6 +62,7 @@ end
 
 function deg_ratio(oddvals, evenvals)
     δE = first(oddvals) - first(evenvals)
+    length(oddvals) == 1 && return δE
     Δ = min(oddvals[2], evenvals[2]) - min(first(oddvals), first(evenvals))
     return δE / Δ
 end
