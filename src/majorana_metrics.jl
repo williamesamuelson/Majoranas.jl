@@ -62,7 +62,7 @@ end
 
 function deg_ratio(oddvals, evenvals)
     δE = first(oddvals) - first(evenvals)
-    length(oddvals) == 1 && return δE
+    length(oddvals) == 1 && return NaN
     Δ = min(oddvals[2], evenvals[2]) - min(first(oddvals), first(evenvals))
     return δE / Δ
 end
@@ -71,7 +71,11 @@ function deg_ratio(H::Hamiltonian)
     return energy_info(H).deg_ratio
 end
 
-excgap(oddvals, evenvals) = min(oddvals[2] - oddvals[1], evenvals[2] - evenvals[1])
+function excgap(oddvals, evenvals)
+    length(oddvals) == 1 && return NaN
+    return min(oddvals[2] - oddvals[1], evenvals[2] - evenvals[1])
+end
+
 function excgap(H::Hamiltonian)
     haskey(H, :excgap) && return H[:excgap]
     return energy_info(H).excgap
