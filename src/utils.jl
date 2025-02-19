@@ -58,7 +58,7 @@ end
 @testitem "Majorana utils" begin
     using QuantumDots, LinearAlgebra, OrderedCollections
     import QuantumDots: kitaev_hamiltonian
-    import Majoranas: single_particle_majoranas, single_particle_majoranas_matrix_els
+    import Majoranas: single_particle_majoranas, single_particle_majoranas_matrix_els, Hamiltonian
     c = FermionBasis(1:2; qn=QuantumDots.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
