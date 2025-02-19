@@ -6,10 +6,6 @@ function parity_eigvals(H::QuantumDots.BlockDiagonal)
     return oddvals, evenvals
 end
 
-function hilbert_schmidt_scalar_product(A,B)
-    return tr(A'*B)/size(B,2)
-end
-
 function coeffs_to_dict(γ::AbstractMajoranaBasis, coeffs::AbstractVector)
     return OrderedDict(zip(keys(γ), coeffs))
 end
@@ -44,8 +40,12 @@ function coeffs_to_matrix(γbasis::AbstractMajoranaBasis, coeffs)
 end
 
 function majorana_coefficients(γbasis::AbstractMajoranaBasis, mat::AbstractMatrix)
-    map(γ->hilbert_schmidt_scalar_product(γ, mat), γbasis)
+    map(γ->scalar_product(γ, mat, _get_basis_norm(γbasis)), γbasis)
 end
+
+scalar_product(A, B, ::HilbertNorm) = hilbert_scalar_product(A, B)
+scalar_product(A, B, ::FrobeniusNorm) = tr(A'*B)
+hilbert_scalar_product(A, B) = tr(A'*B)/size(B,2)
 
 function majorana_coefficients(fermion_basis::FermionBasis, mat::AbstractMatrix)
     majorana_coefficients(ManyBodyMajoranaBasis(fermion_basis), mat)
