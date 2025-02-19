@@ -40,6 +40,7 @@ end
     @test dict[((1, :+), (2, :-))] ≈ 1/2*(Δ + t)
     @test dict[((1, :-), (2, :+))] ≈ 1/2*(Δ - t)
     @test dict[((1, :+), (1, :-), (2, :+), (2, :-))] ≈ V/4 # sign is -1 on 4 length basis
+    @test sum(dict[key] * ham_basis[key] for key in keys(ham_basis)) ≈ pmmham
 end
 
 @testitem "Projected HamiltonianBasis" begin

@@ -80,4 +80,15 @@ end
     signs_y = ones(size(oddvecs, 2))
     γx_s, γy_s = Majoranas.strong_majoranas(oddvecs, evenvecs, (signs_x, signs_y))
     #=@test all((γx_s, γy_s) .≈ (γx, γy))=#
+    
+    c = FermionBasis(1:3; qn=QuantumDots.parity)
+    γ = SingleParticleMajoranaBasis(c)
+    γmb = ManyBodyMajoranaBasis(c)
+    μ, t, Δ, V = rand(4)
+    pmmham = blockdiagonal(kitaev_hamiltonian(c; μ, t, Δ, V), c)
+    Ham = Hamiltonian(pmmham; basis=c)
+    o, e = Majoranas.ground_states(Ham)
+    γ = o * e' + hc
+    dict = Majoranas.matrix_to_dict(γmb, γ)
+    @test sum(dict[key] * γmb[key] for key in keys(γmb)) ≈ γ
 end
