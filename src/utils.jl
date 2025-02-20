@@ -47,10 +47,6 @@ scalar_product(A, B, ::HilbertNorm) = hilbert_scalar_product(A, B)
 scalar_product(A, B, ::FrobeniusNorm) = tr(A'*B)
 hilbert_scalar_product(A, B) = tr(A'*B)/size(B,2)
 
-function majorana_coefficients(fermion_basis::FermionBasis, mat::AbstractMatrix)
-    majorana_coefficients(ManyBodyMajoranaBasis(fermion_basis), mat)
-end
-
 function matrix_to_dict(γbasis::AbstractMajoranaBasis, mat::AbstractMatrix)
     return coeffs_to_dict(γbasis, majorana_coefficients(γbasis, mat))
 end

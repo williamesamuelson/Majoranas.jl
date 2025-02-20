@@ -109,30 +109,19 @@ function ManyBodyMajoranaBasis(γ::SingleParticleMajoranaBasis, max_length::Int=
     return ManyBodyMajoranaBasis(γ, 1:2:max_length)
 end
 
-"""
-Constructor that takes a FermionBasis instead.
-"""
-function ManyBodyMajoranaBasis(fermion_basis::FermionBasis, combination_lengths::AbstractVector; maj_flavors=(:+,:-), basis_norm=HilbertNorm())
-    γ = SingleParticleMajoranaBasis(fermion_basis, maj_flavors, basis_norm)
-    return ManyBodyMajoranaBasis(γ, combination_lengths)
-end
-
-function ManyBodyMajoranaBasis(fermion_basis::FermionBasis, max_length::Int=2*nbr_of_fermions(fermion_basis); maj_flavors=(:+,:-), basis_norm=HilbertNorm())
-    return ManyBodyMajoranaBasis(fermion_basis, 1:2:max_length; maj_flavors, basis_norm)
-end
-
 @testitem "ManyBodyMajoranaBasis constructor" begin
     using QuantumDots
     c = FermionBasis(1:3)
     γ_sp = SingleParticleMajoranaBasis(c)
-    γ_mb = ManyBodyMajoranaBasis(c, 1)
+    γ_mb = ManyBodyMajoranaBasis(γ_sp, 1)
     @test all(values(γ_sp.dict) .== values(γ_mb.dict))
     @test all(values(γ_sp.dict) .== values(ManyBodyMajoranaBasis(γ_sp, 1).dict))
     @test γ_sp[1,:+] == γ_sp[(1,:+)]
-    γ3 = ManyBodyMajoranaBasis(c, 3:3)
+    γ3 = ManyBodyMajoranaBasis(γ_sp, 3:3)
     nbr_of_sp_majoranas(M, i) = length(collect(keys(M))[i])
     @test all([nbr_of_sp_majoranas(γ3, i) == 3 for i in 1:length(γ3)])
-    γ_new_label = ManyBodyMajoranaBasis(c, 3; maj_flavors=(:x, :y))
+    γ_sp_new_label = SingleParticleMajoranaBasis(c, (:x, :y))
+    γ_new_label = ManyBodyMajoranaBasis(γ_sp_new_label, 3)
     sp_labels = [label for labelvec in keys(γ_new_label) for label in labelvec]
     @test all([any((:x, :y) .== label[end]) for label in sp_labels])
 

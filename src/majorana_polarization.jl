@@ -32,7 +32,7 @@ find_sp_labels(maj_basis::SingleParticleMajoranaBasis) = collect(keys(maj_basis)
     import Majoranas: find_sp_labels, find_label_indices, find_region_indices
     c = FermionBasis(1:3, (:a, :b))
     γ_sp = SingleParticleMajoranaBasis(c)
-    γ_mb = ManyBodyMajoranaBasis(c)
+    γ_mb = ManyBodyMajoranaBasis(γ_sp)
     sp_labels = find_sp_labels(γ_sp)
     @test all(sp_labels .== find_sp_labels(γ_mb))
     @test find_label_indices(sp_labels, (1,:a)) == [1, 2]
@@ -54,7 +54,7 @@ end
         return Majoranas.single_particle_majoranas(sp_basis, oddvecs[:, 1], evenvecs[:, 1])
     end
     γ_sp = SingleParticleMajoranaBasis(cpmm)
-    γ_mb = ManyBodyMajoranaBasis(cpmm)
+    γ_mb = ManyBodyMajoranaBasis(γ_sp)
     γs = get_majoranas(γ_sp, pmmham)
     function test_mp(γs, maj_basis, labels, known_mp)
         MP = Majoranas.majorana_polarization(maj_basis, γs..., labels)
@@ -68,7 +68,7 @@ end
     cbd1 = FermionBasis((1:2), (:↑, :↓); qn=QuantumDots.parity)
     bd1ham = blockdiagonal(Hermitian(BD1_hamiltonian(cbd1; h=1e4, μ=1e4, t=1, Δ=0, Δ1=1, θ=[0, pi/2], U=0, V=0, ϕ=0)), cbd1)
     γ_sp = SingleParticleMajoranaBasis(cbd1)
-    γ_mb = ManyBodyMajoranaBasis(cbd1)
+    γ_mb = ManyBodyMajoranaBasis(γ_sp)
     γs = get_majoranas(γ_sp, bd1ham)
     test_mp(γs, γ_mb, [(1,:↓)], 1)
     test_mp(γs, γ_sp, [(1,:↓)], 1)
