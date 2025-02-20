@@ -31,8 +31,6 @@ using TestItemRunner
     @test γ_mb_test^2 == I
 
     coeffs = Majoranas.majorana_coefficients(γ_mb, γ_mb_test)
-    @test coeffs == Majoranas.majorana_coefficients(c, γ_mb_test)
-
     dict_coeffs = coeffs_to_dict(γ_mb, coeffs)
     @test dict_coeffs[test_label] == 1
     @test norm(collect(values(dict_coeffs))) == 1
@@ -42,8 +40,8 @@ end
     using LinearAlgebra
     paulibasis = Majoranas.pauli_basis()
     off_diag_basis = Majoranas.off_diagonal_basis(14)
-    @test isapprox([Majoranas.hilbert_schmidt_scalar_product(σi, σj) for σi in paulibasis, σj in paulibasis], I, atol=1e-6)
-    @test isapprox([Majoranas.hilbert_schmidt_scalar_product(Ei, Ej) for Ei in off_diag_basis, Ej in off_diag_basis], I)
+    @test isapprox([Majoranas.hilbert_scalar_product(σi, σj) for σi in paulibasis, σj in paulibasis], I, atol=1e-6)
+    @test isapprox([Majoranas.hilbert_scalar_product(Ei, Ej) for Ei in off_diag_basis, Ej in off_diag_basis], I)
 end
 
 @testitem "Basic weak Majoranas" begin
@@ -63,8 +61,8 @@ end
     @test isapprox(P' * γy * P, σy)
     @test norm(P' * γx * Q) < 1e-10
     # test matrix construction
-    γ_mb = ManyBodyMajoranaBasis(c)
-    @test all(values(γ_mb) .== values(ManyBodyMajoranaBasis(c, 3)))
+    γ_mb = ManyBodyMajoranaBasis(γ_sp)
+    @test all(values(γ_mb) .== values(ManyBodyMajoranaBasis(γ_sp, 3)))
     nbr_of_majoranas = 2 * QuantumDots.nbr_of_fermions(c)
     @test length(γ_mb) == mapreduce(l -> binomial(nbr_of_majoranas, l), +, 1:2:nbr_of_majoranas)
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q, Majoranas._def_pauli_comps(γ_mb)[1])
@@ -94,12 +92,13 @@ end
     import QuantumDots: kitaev_hamiltonian
     import AffineRayleighOptimization: RAYLEIGH_GENEIG, RAYLEIGH_CHOL, RAYLEIGH_EIG, RAYLEIGH_SPARSE
     c = FermionBasis(1:2; qn=QuantumDots.parity)
+    γ = SingleParticleMajoranaBasis(c)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
     fullsectors = QuantumDots.blocks(eig; full=true)
     oddvecs = fullsectors[1].vectors
     evenvecs = fullsectors[2].vectors
-    γ_mb = ManyBodyMajoranaBasis(c, 3)
+    γ_mb = ManyBodyMajoranaBasis(γ, 3)
     Q = Majoranas.many_body_content_matrix(γ_mb)
 
     prob = WeakMajoranaProblem(γ_mb, oddvecs, evenvecs, Majoranas.RayleighQuotient(Q))
