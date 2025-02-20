@@ -58,7 +58,7 @@ end
 @testitem "Majorana utils" begin
     using QuantumDots, LinearAlgebra, OrderedCollections
     import QuantumDots: kitaev_hamiltonian
-    import Majoranas: single_particle_majoranas, single_particle_majoranas_matrix_els, Hamiltonian
+    import Majoranas: single_particle_majoranas, single_particle_majoranas_matrix_els, Hamiltonian, HilbertNorm, FrobeniusNorm
     c = FermionBasis(1:2; qn=QuantumDots.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
@@ -82,13 +82,15 @@ end
     #=@test all((γx_s, γy_s) .≈ (γx, γy))=#
     
     c = FermionBasis(1:3; qn=QuantumDots.parity)
-    γ = SingleParticleMajoranaBasis(c)
-    γmb = ManyBodyMajoranaBasis(c)
     μ, t, Δ, V = rand(4)
     pmmham = blockdiagonal(kitaev_hamiltonian(c; μ, t, Δ, V), c)
-    Ham = Hamiltonian(pmmham; basis=c)
-    o, e = Majoranas.ground_states(Ham)
-    γ = o * e' + hc
-    dict = Majoranas.matrix_to_dict(γmb, γ)
-    @test sum(dict[key] * γmb[key] for key in keys(γmb)) ≈ γ
+    for basis_norm in (HilbertNorm(), FrobeniusNorm())
+        local γ = SingleParticleMajoranaBasis(c, (:a, :b), basis_norm)
+        γmb = ManyBodyMajoranaBasis(γ)
+        Ham = Hamiltonian(pmmham; basis=c)
+        o, e = Majoranas.ground_states(Ham)
+        γ = o * e' + hc
+        dict = Majoranas.matrix_to_dict(γmb, γ)
+        @test sum(dict[key] * γmb[key] for key in keys(γmb)) ≈ γ
+    end
 end

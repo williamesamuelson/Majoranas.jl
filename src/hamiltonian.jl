@@ -4,7 +4,7 @@ struct HamiltonianBasis{D,B,N} <: AbstractMajoranaBasis
     basis_norm::N
 end
 
-function HamiltonianBasis(γ::SingleParticleMajoranaBasis; max_length::Int=length(γ))
+function HamiltonianBasis(γ::SingleParticleMajoranaBasis, max_length::Int=length(γ))
     dict = ManyBodyMajoranaBasis(γ, 2:2:max_length).dict
     id_mat = copyto!(similar(first(dict)[2], size(first(dict)[2])), I)
     id_mat_normalized = only(_normalize_basis((id_mat,), γ.basis_norm))
@@ -38,9 +38,9 @@ end
     μ, t, Δ, V = rand(4)
     pmmham = kitaev_hamiltonian(c; μ, t, Δ, V)
     for basis_norm in (HilbertNorm(), FrobeniusNorm())
-        γ = SingleParticleMajoranaBasis(c; basis_norm)
+        γ = SingleParticleMajoranaBasis(c, (:+, :-), basis_norm)
         factor = basis_norm == HilbertNorm() ? 1 : sqrt(2^N)
-        ham_basis = HamiltonianBasis(γ; max_length=4)
+        ham_basis = HamiltonianBasis(γ, 4)
         dict = Majoranas.matrix_to_dict(ham_basis, pmmham)
         @test dict[((1, :+), (1, :-))] ≈ factor * (μ/2 - V/4)
         @test dict[((2, :+), (2, :-))] ≈ factor * (μ/2 - V/2) # different value inside bulk

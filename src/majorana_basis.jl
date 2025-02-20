@@ -14,7 +14,7 @@ struct SingleParticleMajoranaBasis{D, B, N} <: AbstractMajoranaBasis
     dict::D
     fermion_basis::B
     basis_norm::N
-    function SingleParticleMajoranaBasis(fermion_basis::B; basis_labels=standard_bas_labels(fermion_basis, (:+,:-)), basis_norm=HilbertNorm()) where B <: FermionBasis
+    function SingleParticleMajoranaBasis(fermion_basis::B, basis_labels=standard_bas_labels(fermion_basis, (:+,:-)), basis_norm=HilbertNorm()) where B <: FermionBasis
         N = length(fermion_basis)
         length(basis_labels) == 2 * N || throw(ErrorException("Number of majoranas is not twice the fermion number"))
         majs = reduce(vcat, [[f + f', 1im * (f - f')] for f in fermion_basis]) # to get correct ordering
@@ -28,29 +28,29 @@ _get_basis_norm(γ::SingleParticleMajoranaBasis) = γ.basis_norm
 _normalize_basis(majs, ::HilbertNorm) = majs
 _normalize_basis(majs, ::FrobeniusNorm) = map(maj -> maj/norm(maj), majs)
 
-function SingleParticleMajoranaBasis(fermion_basis::FermionBasis, majorana_labels::NTuple{2})
-    maj_basis_labels = standard_bas_labels(fermion_basis, majorana_labels)
-    return SingleParticleMajoranaBasis(fermion_basis, maj_basis_labels)
+function SingleParticleMajoranaBasis(fermion_basis::FermionBasis, maj_flavors::NTuple{2}, basis_norm=HilbertNorm())
+    basis_labels = standard_bas_labels(fermion_basis, maj_flavors)
+    return SingleParticleMajoranaBasis(fermion_basis, basis_labels, basis_norm)
 end
 
-function SingleParticleMajoranaBasis(nbr_of_majoranas::Int, maj_basis_labels=1:nbr_of_majoranas)
+function SingleParticleMajoranaBasis(nbr_of_majoranas::Int, basis_labels=1:nbr_of_majoranas, basis_norm=HilbertNorm())
     iseven(nbr_of_majoranas) || throw(ErrorException("Number of majoranas must be even"))
-    length(maj_basis_labels) == nbr_of_majoranas || throw(ErrorException("Length of labels must match nbr_of_majoranas"))
+    length(basis_labels) == nbr_of_majoranas || throw(ErrorException("Length of labels must match nbr_of_majoranas"))
     c = FermionBasis(1:div(nbr_of_majoranas, 2); qn=QuantumDots.parity)
-    SingleParticleMajoranaBasis(c, maj_basis_labels)
+    SingleParticleMajoranaBasis(c, basis_labels, basis_norm)
 end
 
-function standard_bas_labels(fermion_basis, maj_labels)
-    reduce(vcat, [[(label..., maj_labels[1]), (label..., maj_labels[2])] for label in keys(fermion_basis)])
+function standard_bas_labels(fermion_basis, maj_flavors)
+    reduce(vcat, [[(label..., maj_flavors[1]), (label..., maj_flavors[2])] for label in keys(fermion_basis)])
 end
 
 @testitem "SingleParticleMajoranaBasis without fermions" begin
     using QuantumDots, LinearAlgebra
     nbr_of_majoranas = 6
-    labs = 0:5
-    γ = SingleParticleMajoranaBasis(nbr_of_majoranas, labs)
-    i = rand(labs)
-    for j in labs
+    basis_labels = 0:5
+    γ = SingleParticleMajoranaBasis(nbr_of_majoranas, basis_labels)
+    i = rand(basis_labels)
+    for j in basis_labels
         @test γ[j]' == γ[j]
         anti_comm = γ[i]*γ[j] + γ[j]*γ[i]
         if i == j
@@ -105,20 +105,20 @@ end
 
 _get_basis_norm(γmb::ManyBodyMajoranaBasis) = γmb.basis_norm
 
-function ManyBodyMajoranaBasis(γ::SingleParticleMajoranaBasis; max_length::Int=length(γ))
+function ManyBodyMajoranaBasis(γ::SingleParticleMajoranaBasis, max_length::Int=length(γ))
     return ManyBodyMajoranaBasis(γ, 1:2:max_length)
 end
 
 """
 Constructor that takes a FermionBasis instead.
 """
-function ManyBodyMajoranaBasis(fermion_basis::FermionBasis, combination_lengths::AbstractVector; maj_labels=(:+,:-), basis_norm=HilbertNorm())
-    γ = SingleParticleMajoranaBasis(fermion_basis, maj_labels, basis_norm)
+function ManyBodyMajoranaBasis(fermion_basis::FermionBasis, combination_lengths::AbstractVector; maj_flavors=(:+,:-), basis_norm=HilbertNorm())
+    γ = SingleParticleMajoranaBasis(fermion_basis, maj_flavors, basis_norm)
     return ManyBodyMajoranaBasis(γ, combination_lengths)
 end
 
-function ManyBodyMajoranaBasis(fermion_basis::FermionBasis; max_length::Int=2*nbr_of_fermions(fermion_basis), maj_labels=(:+,:-), basis_norm=HilbertNorm())
-    return ManyBodyMajoranaBasis(fermion_basis, 1:2:max_length; maj_labels, basis_norm)
+function ManyBodyMajoranaBasis(fermion_basis::FermionBasis, max_length::Int=2*nbr_of_fermions(fermion_basis); maj_flavors=(:+,:-), basis_norm=HilbertNorm())
+    return ManyBodyMajoranaBasis(fermion_basis, 1:2:max_length; maj_flavors, basis_norm)
 end
 
 @testitem "ManyBodyMajoranaBasis constructor" begin
@@ -132,7 +132,7 @@ end
     γ3 = ManyBodyMajoranaBasis(c, 3:3)
     nbr_of_sp_majoranas(M, i) = length(collect(keys(M))[i])
     @test all([nbr_of_sp_majoranas(γ3, i) == 3 for i in 1:length(γ3)])
-    γ_new_label = ManyBodyMajoranaBasis(c, 3, (:x, :y))
+    γ_new_label = ManyBodyMajoranaBasis(c, 3; maj_flavors=(:x, :y))
     sp_labels = [label for labelvec in keys(γ_new_label) for label in labelvec]
     @test all([any((:x, :y) .== label[end]) for label in sp_labels])
 
