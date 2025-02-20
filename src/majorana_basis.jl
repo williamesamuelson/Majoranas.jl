@@ -5,6 +5,9 @@ abstract type BasisNorm end
 struct HilbertNorm <: BasisNorm end
 struct FrobeniusNorm <: BasisNorm end
 
+(::HilbertNorm)(A::AbstractMatrix) = sqrt(hilbert_scalar_product(A, A))
+(::FrobeniusNorm)(A::AbstractMatrix) = norm(A)
+
 """
     SingleParticleMajoranaBasis(fermion_basis, majorana_labels=(:+, :-))
 
@@ -25,8 +28,7 @@ struct SingleParticleMajoranaBasis{D, B, N} <: AbstractMajoranaBasis
 end
 
 _get_basis_norm(γ::SingleParticleMajoranaBasis) = γ.basis_norm
-_normalize_basis(majs, ::HilbertNorm) = majs
-_normalize_basis(majs, ::FrobeniusNorm) = map(maj -> maj/norm(maj), majs)
+_normalize_basis(majs, basis_norm::BasisNorm) = map(maj -> maj/basis_norm(maj), majs)
 
 function SingleParticleMajoranaBasis(fermion_basis::FermionBasis, maj_flavors::NTuple{2}, basis_norm=HilbertNorm())
     basis_labels = standard_bas_labels(fermion_basis, maj_flavors)
@@ -128,6 +130,19 @@ end
     γ_sp = SingleParticleMajoranaBasis(6)
     γ_mb = ManyBodyMajoranaBasis(γ_sp)
     @test length(γ_mb) == 32
+end
+
+@testitem "Majorana basis norm" begin
+    using QuantumDots, LinearAlgebra
+    import Majoranas: _get_basis_norm, HilbertNorm, FrobeniusNorm, hilbert_scalar_product
+    c = FermionBasis(1:2)
+    for basis_norm in (HilbertNorm(), FrobeniusNorm())
+        γ = SingleParticleMajoranaBasis(c, (:x, :y), basis_norm)
+        γmb = ManyBodyMajoranaBasis(γ)
+        @test _get_basis_norm(γ) == basis_norm
+        @test _get_basis_norm(γmb) == basis_norm
+        @test all([basis_norm(γb) == 1 for γb in γmb])
+    end
 end
 
 Base.getindex(M::AbstractMajoranaBasis, label)= M.dict[label]
