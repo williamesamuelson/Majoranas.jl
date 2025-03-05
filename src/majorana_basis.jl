@@ -143,6 +143,8 @@ end
         @test _get_basis_norm(γmb) == basis_norm
         @test all([basis_norm(γb) == 1 for γb in γmb])
     end
+    γ = SingleParticleMajoranaBasis(c, (:x, :y), FrobeniusNorm())
+    @test norm([tr(γ1' * γ2) for γ1 in γ, γ2 in γ] - I) < 1e-10
 end
 
 Base.getindex(M::AbstractMajoranaBasis, label)= M.dict[label]
