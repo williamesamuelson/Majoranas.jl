@@ -102,42 +102,55 @@ function MP(R, H::Hamiltonian)
     return majorana_polarization(majcoeffs..., R).mp
 end
 
-function LD(R, H::Hamiltonian)
+function LD(red_basis::FermionBasis, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     δρ = oddvec * oddvec' - evenvec * evenvec'
-    return norm(partial_trace(δρ, R, get_basis(H)))
+    return norm(partial_trace(δρ, red_basis, get_basis(H)))
+end
+LD(R, H::Hamiltonian) = LD(FermionBasis(R), H)
+
+function groundstate_majoranas(oddvec, evenvec)
+    γ = oddvec * evenvec' + evenvec * oddvec'
+    γtilde = 1im * (oddvec * evenvec' - evenvec * oddvec')
+    return γ, γtilde
 end
 
-function LF_info(R, H::Hamiltonian)
+function LF_info(red_basis::FermionBasis, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
-    γ = oddvec * evenvec' + evenvec * oddvec'
+    γ, γtilde = groundstate_majoranas(oddvec, evenvec)
     basis = get_basis(H)
-    block_inds = QuantumDots.blockinds(QuantumDots.symmetry(basis))
-    γ[block_inds[2], block_inds[1]] .= 0
-    basis_red = FermionBasis(R; qn=ParityConservation())
-    A_red = partial_trace(γ, basis_red, basis)
-    block_inds_red = QuantumDots.blockinds(QuantumDots.symmetry(basis_red))
-    α = A_red[block_inds_red[1], block_inds_red[2]]
-    β = -A_red[block_inds_red[2], block_inds_red[1]]'
+    α, β = alpha_beta_matrices(oddvec, evenvec, red_basis, basis)
+    θmin = - 1/2 * angle(tr(α * β'))
+    θmax = θmin + π / 2
+    γmin, γmax = map(θ -> cos(θ) * γ + sin(θ) * γtilde, (θmin, θmax))
     α2_plus_β2 = norm(α)^2 + norm(β)^2
-    LFmin, LFmax = map(sgn -> sqrt(α2_plus_β2 + sgn * 2 * abs(tr(α * β'))), (-1, 1))
-    prod = LFmin * LFmax
-    return (;LFmin, prod)
+    LF, LFmax = map(sgn -> sqrt(α2_plus_β2 + sgn * 2 * abs(tr(α * β'))), (-1, 1))
+    return (;LF, LFmax, γmin, γmax, θmin)
+end
+LF_info(R, H::Hamiltonian) = LF_info(FermionBasis(R; qn=ParityConservation()), H)
+
+LF(red_basis::FermionBasis, H::Hamiltonian) = LF_info(red_basis, H).LF
+LF(R, H::Hamiltonian) = LF(FermionBasis(R; qn=ParityConservation()), H)
+
+function alpha_beta_matrices(oddvec, evenvec, red_basis, basis)
+    A_full = oddvec * evenvec'
+    A_red = partial_trace(A_full, red_basis, basis)
+    block_inds_red = QuantumDots.blockinds(QuantumDots.symmetry(red_basis))
+    α = sqrt(2) * A_red[block_inds_red[1], block_inds_red[2]]
+    β = -1 * sqrt(2) * A_red[block_inds_red[2], block_inds_red[1]]'
+    return α, β
 end
 
-LF(R, H::Hamiltonian) = LF_info(R, H).LFmin
-
-function creduced(R, H::Hamiltonian)
+function creduced(red_basis::FermionBasis, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
-    γ = oddvec * evenvec' + evenvec * oddvec'
+    γ, _ = groundstate_majoranas(oddvec, evenvec)
     basis = get_basis(H)
     P = QuantumDots.parityoperator(basis)
-    basis_red = FermionBasis(R; qn=ParityConservation())
     c = (I + P) * γ
-    return norm(partial_trace(c, basis_red, basis))
+    return norm(partial_trace(c, red_basis, basis))
 end
 
 # perhaps useful to compare with GS LF, only for real ham
@@ -155,15 +168,16 @@ end
     using QuantumDots, LinearAlgebra
     import QuantumDots: kitaev_hamiltonian
     import Majoranas: Hamiltonian, ground_states, energy_info, degeneracy, deg_ratio, excgap, spectrum_weakness
-    import Majoranas: MP, LD, LF, single_particle_LF
+    import Majoranas: MP, LD, LF, LF_info, single_particle_LF
     cpmm = FermionBasis(1:2; qn=ParityConservation())
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), cpmm)
     H = Hamiltonian(pmmham; basis=cpmm)
     regions = [[1], [2], [1, 2]]
+    bases = [FermionBasis(R; qn=ParityConservation()) for R in regions]
     @test all(map(R -> MP(R, H), regions) .≈ [1.0, 1.0, 0.0])
     @test haskey(H, :maj_coeffs)
-    @test all(map(R -> LD(R, H), regions) .≈ [0.0, 0.0, sqrt(2)])
-    @test all(map(R -> LF(R, H), regions) .≈ [0.0, 0.0, 1.0])
+    @test all(map(bR -> LD(bR, H), bases) .≈ [0.0, 0.0, sqrt(2)])
+    @test all(map(bR -> LF(bR, H), bases) .≈ [0.0, 0.0, sqrt(2)])
     H = Hamiltonian(pmmham; basis=cpmm)
     @test MP(regions[1], H) ≈ 1.0 # diagonalize! is called in MP
     e_info = energy_info(H)
@@ -179,4 +193,48 @@ end
     @test spectrum_weakness(H_noint) ≈ 0.0
     @test_warn "Hamiltonian must be real for single_particle_LF" single_particle_LF([1], H)
     @test single_particle_LF([1], H_noint) < 1e-10
+end
+
+@testitem "LF, γmin and alpha_beta_matrices" begin
+    using QuantumDots, LinearAlgebra
+    import QuantumDots: kitaev_hamiltonian
+    import Majoranas: Hamiltonian, LD, LF, LF_info, alpha_beta_matrices, ground_states
+    # test LF and γmin for a 2-site complex interacting Kitaev chain
+    qn = ParityConservation()
+    basis = FermionBasis(1:2; qn)
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(basis; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), basis)
+    H = Hamiltonian(pmmham; basis)
+    red_basis = FermionBasis([1]; qn)
+    α, β = alpha_beta_matrices(ground_states(H)..., red_basis, basis)
+    LFinfo = LF_info(red_basis, H)
+    γmin, γmax, θmin = LFinfo.γmin, LFinfo.γmax, LFinfo.θmin
+    θmax = θmin + π / 2
+    @test γmin' ≈ γmin
+    @test γmax' ≈ γmax
+    @test norm(γmin) ≈ norm(γmax) ≈ sqrt(2)
+    reduced_γmin = partial_trace(γmin, red_basis, basis)
+    @test norm(reduced_γmin) < 1e-10 # small, but norm(reduced_γmin) !≈ LFinfo.LF
+    reduced_γmax = partial_trace(γmax, red_basis, basis)
+    @test norm(reduced_γmax) ≈ LFinfo.LFmax
+    reconstructed_γmax = 1/sqrt(2) * ([0I exp(1im * θmax) * α - exp(-1im * θmax) * β; 0I 0I] + hc)
+    @test reduced_γmax ≈ reconstructed_γmax
+
+    # test α β matrices for a larger region
+    basis = FermionBasis(1:3; qn)
+    rand_ham = blockdiagonal(Hermitian(rand(2^3, 2^3)), basis)
+    H = Hamiltonian(rand_ham; basis)
+    red_basis = FermionBasis([1, 2]; qn)
+    α, β = alpha_beta_matrices(ground_states(H)..., red_basis, basis)
+    LFinfo = LF_info(red_basis, H)
+    γmin, γmax, θmin = LFinfo.γmin, LFinfo.γmax, LFinfo.θmin
+    @test abs(θmin) < 1e-10 || θmin ≈ - π / 2 # the Hamiltonian is real, so α and β are real
+    @test γmin' ≈ γmin
+    @test γmax' ≈ γmax
+    @test norm(γmin) ≈ norm(γmax) ≈ sqrt(2)
+    reduced_γmin = partial_trace(γmin, red_basis, basis)
+    reduced_γmax = partial_trace(γmax, red_basis, basis)
+    @test norm(reduced_γmax) ≈ LFinfo.LFmax
+    @test norm(reduced_γmin) ≈ LFinfo.LF
+    reconstructed_γmin = 1/sqrt(2) * ([0I exp(1im * θmin) * α - exp(-1im * θmin) * β; 0I 0I] + hc)
+    @test reduced_γmin ≈ reconstructed_γmin
 end

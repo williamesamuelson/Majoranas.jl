@@ -191,7 +191,7 @@ get_basis(H::Hamiltonian{<:BasisArray}) = H.ham.basis
     @test all(map(R -> MP(R, H), regions) .≈ [1.0, 1.0, 0.0])
     @test haskey(H, :maj_coeffs)
     @test all(map(R -> LD(R, H), regions) .≈ [0.0, 0.0, sqrt(2)])
-    @test all(map(R -> LF(R, H), regions) .≈ [0.0, 0.0, 1.0])
+    @test all(map(R -> LF(R, H), regions) .≈ [0.0, 0.0, sqrt(2)])
     H = Hamiltonian(pmmham)
     @test MP(regions[1], H) ≈ 1.0 # diagonalize! is called in MP
     e_info = energy_info(H)
