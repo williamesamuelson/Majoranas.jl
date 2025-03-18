@@ -5,15 +5,8 @@ struct HamiltonianBasis{D,B,N} <: AbstractMajoranaBasis
 end
 
 function HamiltonianBasis(γ::SingleParticleMajoranaBasis, max_length::Int=length(γ))
-    dict = ManyBodyMajoranaBasis(γ, 2:2:max_length).dict
-    id_mat = copyto!(similar(first(dict)[2], size(first(dict)[2])), I)
-    id_mat_normalized = only(_normalize_basis((id_mat,), γ.basis_norm))
-    vd = collect(values(dict))
-    kd = keys(dict)
-    push!(vd, id_mat_normalized)
-    kd = [collect(kd)..., empty(first(keys(dict)))]
-    newdict = OrderedDict(zip(kd, vd))
-    return HamiltonianBasis(newdict, γ.fermion_basis, γ.basis_norm)
+    dict = ManyBodyMajoranaBasis(γ, 0:2:max_length).dict
+    return HamiltonianBasis(dict, γ.fermion_basis, γ.basis_norm)
 end
 
 _get_basis_norm(γ::HamiltonianBasis) = γ.basis_norm
@@ -26,7 +19,6 @@ function ProjectedHamiltonianBasis(γ::SingleParticleMajoranaBasis, parity::Int)
     independent_inds = [(1:div(length(H), 2)-1)..., length(H)] # is this really correct?
     independent_labels = collect(keys(H))[independent_inds]
     return HamiltonianBasis(OrderedDict(zip(independent_labels, projected_mats[independent_inds])), H.fermion_basis, H.basis_norm)
-    # return HamiltonianBasis(QuantumDots.Dictionary(independent_labels, projected_mats[independent_inds]), H.fermion_basis)
 end
 
 @testitem "HamiltonianBasis" begin
