@@ -28,7 +28,7 @@ struct SingleParticleMajoranaBasis{D, B, N} <: AbstractMajoranaBasis
 end
 
 _get_basis_norm(γ::SingleParticleMajoranaBasis) = γ.basis_norm
-_normalize_basis(majs, basis_norm::BasisNorm) = map(maj -> maj/basis_norm(maj), majs)
+_normalize_basis(majs, basis_norm::BasisNorm) = map(maj -> maj / basis_norm(maj), majs)
 
 function SingleParticleMajoranaBasis(fermion_basis::FermionBasis, maj_flavors::NTuple{2}, basis_norm=HilbertNorm())
     basis_labels = standard_bas_labels(fermion_basis, maj_flavors)
@@ -69,7 +69,7 @@ end
 All combinations of many body Majorana labels with products of lengths in combination_lengths.
 """
 function full_many_body_majorana_labels(single_particle_labels, combination_lengths::AbstractVector)
-    mapreduce(length->collect(combinations(single_particle_labels, length)), vcat, combination_lengths)
+    mapreduce(length -> collect(combinations(single_particle_labels, length)), vcat, combination_lengths)
 end
 
 @testitem "Many Body Majorana labels" begin
@@ -78,17 +78,27 @@ end
     γ = SingleParticleMajoranaBasis(c)
     labels = Majoranas.full_many_body_majorana_labels(collect(keys(γ)), [2])
     @test length(labels) == binomial(4, 2) # Number of pairs from 4 Majoranas
+    empty_label = Majoranas.full_many_body_majorana_labels(collect(keys(γ)), [0])
+    @test isempty(only(empty_label))
 end
 
 """
 To ensure that individual basis elememts square to one and are Hermitian.
+Gives phases (0,1), (1,1), (2,i), (3, -i), (4, -1)...
 """
-manybody_majorana_phase(nbr_of_factors) = 1im^(nbr_of_factors*(nbr_of_factors - 1) / 2) # gives phases (0,1), (1,1), (2,i), (3, -i), (4, -1)...
+manybody_majorana_phase(nbr_of_factors) = 1im^(nbr_of_factors*(nbr_of_factors - 1) / 2)
 
 """
 Takes a list of single particle Majoranas and a single particle basis and constructs the corresponding many body Majorana.
 """
-labels_to_manybody_majorana(labels, γ) = manybody_majorana_phase(length(labels)) * mapreduce(label -> γ[label], *, labels)
+function labels_to_manybody_majorana(labels, γ)
+    if isempty(labels)
+        id_size = size(first(values(γ.dict)))
+        return I(first(id_size))
+    end
+    phase = manybody_majorana_phase(length(labels))
+    return phase * mapreduce(label -> γ[label], *, labels)
+end
 
 """
 Constructs a many body Majorana basis from a single particle basis.
@@ -98,7 +108,7 @@ struct ManyBodyMajoranaBasis{M, N}<:AbstractMajoranaBasis
     basis_norm::N
     function ManyBodyMajoranaBasis(γ::SingleParticleMajoranaBasis, combination_lengths::AbstractVector)
         many_body_labels = full_many_body_majorana_labels(collect(keys(γ)), combination_lengths)
-        γmb = map(labels->labels_to_manybody_majorana(labels, γ), many_body_labels)
+        γmb = map(labels -> labels_to_manybody_majorana(labels, γ), many_body_labels)
         γmb = _normalize_basis(γmb, γ.basis_norm)
         d = OrderedDict(zip(Tuple.(many_body_labels), γmb))
         new{typeof(d), typeof(γ.basis_norm)}(d, γ.basis_norm)
@@ -112,7 +122,7 @@ function ManyBodyMajoranaBasis(γ::SingleParticleMajoranaBasis, max_length::Int=
 end
 
 @testitem "ManyBodyMajoranaBasis constructor" begin
-    using QuantumDots
+    using QuantumDots, LinearAlgebra
     c = FermionBasis(1:3)
     γ_sp = SingleParticleMajoranaBasis(c)
     γ_mb = ManyBodyMajoranaBasis(γ_sp, 1)
@@ -127,6 +137,9 @@ end
     sp_labels = [label for labelvec in keys(γ_new_label) for label in labelvec]
     @test all([any((:x, :y) .== label[end]) for label in sp_labels])
 
+    γ_mb = ManyBodyMajoranaBasis(γ_sp, 0:6)
+    @test γ_mb[()] == I
+
     γ_sp = SingleParticleMajoranaBasis(6)
     γ_mb = ManyBodyMajoranaBasis(γ_sp)
     @test length(γ_mb) == 32
@@ -138,13 +151,14 @@ end
     c = FermionBasis(1:2)
     for basis_norm in (HilbertNorm(), FrobeniusNorm())
         γ = SingleParticleMajoranaBasis(c, (:x, :y), basis_norm)
-        γmb = ManyBodyMajoranaBasis(γ)
+        γmb = ManyBodyMajoranaBasis(γ, 0:4)
         @test _get_basis_norm(γ) == basis_norm
         @test _get_basis_norm(γmb) == basis_norm
         @test all([basis_norm(γb) == 1 for γb in γmb])
     end
     γ = SingleParticleMajoranaBasis(c, (:x, :y), FrobeniusNorm())
-    @test norm([tr(γ1' * γ2) for γ1 in γ, γ2 in γ] - I) < 1e-10
+    γmb = ManyBodyMajoranaBasis(γ, 0:4)
+    @test norm([tr(γ1' * γ2) for γ1 in γmb, γ2 in γmb] - I) < 1e-10
 end
 
 Base.getindex(M::AbstractMajoranaBasis, label)= M.dict[label]
@@ -153,7 +167,4 @@ Base.getindex(M::AbstractMajoranaBasis, labels...)= M.dict[labels]
 Base.iterate(M::AbstractMajoranaBasis) = iterate(values(M.dict))
 Base.iterate(M::AbstractMajoranaBasis, state) = iterate(values(M.dict), state)
 Base.keys(M::AbstractMajoranaBasis) = keys(M.dict)
-#=Base.values(M::AbstractMajoranaBasis) = values(M.dict)=#
 Base.length(M::AbstractMajoranaBasis) = length(M.dict)
-#=labels(M::AbstractMajoranaBasis) = collect(keys(M))=#
-#=nbr_of_majoranas(c::FermionBasis) = 2*nbr_of_fermions(c)=#
