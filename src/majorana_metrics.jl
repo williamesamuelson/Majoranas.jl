@@ -116,7 +116,7 @@ function groundstate_majoranas(oddvec, evenvec)
     return γ, γtilde
 end
 
-function LF_info(red_basis::FermionBasis, H::Hamiltonian)
+function LF_info(red_basis::FermionBasis, H::Hamiltonian, θ=0.0)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     γ, γtilde = groundstate_majoranas(oddvec, evenvec)
@@ -124,10 +124,11 @@ function LF_info(red_basis::FermionBasis, H::Hamiltonian)
     α, β = alpha_beta_matrices(oddvec, evenvec, red_basis, basis)
     θmin = - 1/2 * angle(tr(α * β'))
     θmax = θmin + π / 2
-    γmin, γmax = map(θ -> cos(θ) * γ + sin(θ) * γtilde, (θmin, θmax))
+    γmin, γmax, γθ = map(θ -> cos(θ) * γ + sin(θ) * γtilde, (θmin, θmax, θ))
     α2_plus_β2 = norm(α)^2 + norm(β)^2
     LF, LFmax = map(sgn -> sqrt(α2_plus_β2 + sgn * 2 * abs(tr(α * β'))), (-1, 1))
-    return (;LF, LFmax, γmin, γmax, θmin)
+    LFθ = norm(partial_trace(γθ, red_basis, basis))
+    return (;LF, LFmax, LFθ, γmin, γmax, γθ, θmin)
 end
 LF_info(R, H::Hamiltonian) = LF_info(FermionBasis(R; qn=ParityConservation()), H)
 
@@ -225,9 +226,12 @@ end
     H = Hamiltonian(rand_ham; basis)
     red_basis = FermionBasis([1, 2]; qn)
     α, β = alpha_beta_matrices(ground_states(H)..., red_basis, basis)
-    LFinfo = LF_info(red_basis, H)
-    γmin, γmax, θmin = LFinfo.γmin, LFinfo.γmax, LFinfo.θmin
+    θ = 0.0
+    LFinfo = LF_info(red_basis, H, θ)
+    γmin, γmax, γθ, θmin = LFinfo.γmin, LFinfo.γmax, LFinfo.γθ, LFinfo.θmin
     @test abs(θmin) < 1e-10 || θmin ≈ - π / 2 # the Hamiltonian is real, so α and β are real
+    @test γθ ≈ γmax
+    @test LFinfo.LFθ ≈ LFinfo.LFmax
     @test γmin' ≈ γmin
     @test γmax' ≈ γmax
     @test norm(γmin) ≈ norm(γmax) ≈ sqrt(2)
