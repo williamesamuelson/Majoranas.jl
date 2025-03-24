@@ -43,6 +43,14 @@ function ground_states(H::Hamiltonian)
     return oddvec, evenvec
 end
 
+function full_states(H::Hamiltonian)
+    isdiagonalized(H) || diagonalize!(H)
+    sectors = QuantumDots.blocks(get_diag_ham(H); full=true)
+    oddvecs = eachcol(sectors[1].vectors)
+    evenvecs = eachcol(sectors[2].vectors)
+    return oddvecs, evenvecs
+end
+
 function energy_info(H::Hamiltonian) # user won't call this?
     isdiagonalized(H) || diagonalize!(H)
     sectors = QuantumDots.blocks(get_diag_ham(H))
