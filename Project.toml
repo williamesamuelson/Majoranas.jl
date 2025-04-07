@@ -1,7 +1,7 @@
 name = "Majoranas"
 uuid = "c0bcf24a-0299-47db-9920-c7627388ccab"
 authors = ["William Samuelson <william.samuelson@gmail.com> and contributors"]
-version = "1.6.1"
+version = "1.7.0"
 
 [deps]
 AffineRayleighOptimization = "afc0e0ae-cd0a-41ee-b0f5-7950de095d62"
@@ -13,18 +13,16 @@ QuantumDots = "312194fd-fec5-4b07-ba1c-a40d7013a56a"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
-[sources.AffineRayleighOptimization]
-url = "https://github.com/williamesamuelson/AffineRayleighOptimization.jl"
-
-[sources.QuantumDots]
-url = "https://github.com/cvsvensson/QuantumDots.jl"
+[sources]
+AffineRayleighOptimization = {url = "https://github.com/williamesamuelson/AffineRayleighOptimization.jl"}
+QuantumDots = { url = "https://github.com/cvsvensson/QuantumDots.jl"}
 
 [compat]
 AffineRayleighOptimization = "2"
 Combinatorics = "1"
 LinearSolve = "2, 3"
 OrderedCollections = "1.6.3"
-QuantumDots = "0.16"
+QuantumDots = "0.17"
 TestItems = "1"
 julia = "1.10"
 

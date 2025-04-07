@@ -7,7 +7,7 @@ using TestItemRunner
     Random.seed!(1234)
     c = FermionBasis(1:2, (:a, :b))
     γ = SingleParticleMajoranaBasis(c)
-    @test length(γ) == 2 * QuantumDots.nbr_of_fermions(c)
+    @test length(γ) == 2 * QuantumDots.nbr_of_modes(c)
     test_label = (1, :a, :+)
     for γ_op in γ
         @test γ_op == γ_op'
@@ -63,7 +63,7 @@ end
     # test matrix construction
     γ_mb = ManyBodyMajoranaBasis(γ_sp)
     @test all(values(γ_mb) .== values(ManyBodyMajoranaBasis(γ_sp, 3)))
-    nbr_of_majoranas = 2 * QuantumDots.nbr_of_fermions(c)
+    nbr_of_majoranas = 2 * QuantumDots.nbr_of_modes(c)
     @test length(γ_mb) == mapreduce(l -> binomial(nbr_of_majoranas, l), +, 1:2:nbr_of_majoranas)
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q, Majoranas._def_pauli_comps(γ_mb)[1])
     @test size(BP) == (2, length(γ_mb))

@@ -1,4 +1,4 @@
-using QuantumDots: nbr_of_fermions
+using QuantumDots: nbr_of_modes
 
 abstract type AbstractMajoranaBasis <: QuantumDots.AbstractBasis end
 abstract type BasisNorm end
