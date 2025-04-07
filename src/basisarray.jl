@@ -111,7 +111,7 @@ Base.one(x::BasisArray) = BasisArray(one(x.parent), x.basis)
 
 QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::FermionBasis) = BasisArray(wedge(map(b -> b.parent, bs), map(b -> b.basis, bs), b), b)
 QuantumDots.blockdiagonal(b::BasisArray) = BasisArray(blockdiagonal(b.parent, b.basis), b.basis)
-QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::QuantumDots.AbstractBasis) = BasisArray(partial_trace(m.parent, bsub, m.basis), bsub)
+QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::QuantumDots.AbstractManyBodyBasis) = BasisArray(partial_trace(m.parent, m.basis, bsub), bsub)
 
 struct ManyBodyBasisArrayWrapper{B<:QuantumDots.AbstractManyBodyBasis} <: QuantumDots.AbstractManyBodyBasis
     basis::B
@@ -139,11 +139,12 @@ function Base.iterate(b::ManyBodyBasisArrayWrapper, state)
 end
 Base.length(b::ManyBodyBasisArrayWrapper) = length(b.basis)
 QuantumDots.symmetry(b::ManyBodyBasisArrayWrapper) = QuantumDots.symmetry(b.basis)
-QuantumDots.nbr_of_fermions(b::ManyBodyBasisArrayWrapper) = nbr_of_fermions(b.basis)
+QuantumDots.nbr_of_modes(b::ManyBodyBasisArrayWrapper) = nbr_of_modes(b.basis)
 Base.eltype(b::ManyBodyBasisArrayWrapper) = eltype(b.basis)
 Base.keytype(b::ManyBodyBasisArrayWrapper) = keytype(b.basis)
 BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.basis)
 QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper) = wedge(bs, b.basis)
+QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::ManyBodyBasisArrayWrapper) = BasisArray(partial_trace(m.parent, m.basis, bsub.basis), bsub.basis)
 
 function QuantumDots.diagonalize(H::BasisArray)
     dh = diagonalize(H.parent)
