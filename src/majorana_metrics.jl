@@ -135,8 +135,10 @@ function LF_info(red_basis::FermionBasis, H::Hamiltonian, θ=0.0)
     γmin, γmax, γθ = map(θ -> cos(θ) * γ + sin(θ) * γtilde, (θmin, θmax, θ))
     α2_plus_β2 = norm(α)^2 + norm(β)^2
     LF, LFmax = map(sgn -> sqrt(α2_plus_β2 + sgn * 2 * abs(tr(α * β'))), (-1, 1))
-    LFθ = norm(partial_trace(γθ, basis, red_basis))
-    return (; LF, LFmax, LFθ, γmin, γmax, γθ, θmin)
+    γθR = partial_trace(γθ, basis, red_basis)
+    LFθ = norm(γθR)
+    LF1θ = norm(svdvals(γθR), 1)
+    return (; LF, LFmax, LFθ, LF1θ, γmin, γmax, γθ, θmin)
 end
 LF_info(R, H::Hamiltonian) = LF_info(FermionBasis(R; qn=ParityConservation()), H)
 
