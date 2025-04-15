@@ -1,7 +1,7 @@
 name = "Majoranas"
 uuid = "c0bcf24a-0299-47db-9920-c7627388ccab"
 authors = ["William Samuelson <william.samuelson@gmail.com> and contributors"]
-version = "1.7.0"
+version = "1.8.0"
 
 [deps]
 AffineRayleighOptimization = "afc0e0ae-cd0a-41ee-b0f5-7950de095d62"
@@ -22,7 +22,7 @@ AffineRayleighOptimization = "2"
 Combinatorics = "1"
 LinearSolve = "2, 3"
 OrderedCollections = "1.6.3"
-QuantumDots = "0.17"
+QuantumDots = "0.18"
 TestItems = "1"
 julia = "1.10"
 
