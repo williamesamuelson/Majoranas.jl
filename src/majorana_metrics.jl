@@ -9,34 +9,33 @@ end
 
 get_basis(H::Hamiltonian) = H.dict[:basis]
 get_ham(H::Hamiltonian) = H.ham
-get_diag_ham(H::Hamiltonian) = isdiagonalized(H) ? H[:DH] : (diagonalize!(H); return H[:DH])
+get_diag_ham(H::Hamiltonian) = isdiagonalized(H) ? H[:diag] : (diagonalize!(H); return H[:diag])
 Base.haskey(H::Hamiltonian, key) = haskey(H.dict, key)
 Base.getindex(H::Hamiltonian, key...) = getindex(H.dict, key...)
 Base.setindex!(H::Hamiltonian, value, key...) = setindex!(H.dict, value, key...)
 
-diagonalize!(H::Hamiltonian) = (H[:DH] = diagonalize(get_ham(H))) # maybe find a better key for the diagonalized hamiltonian
-isdiagonalized(H::Hamiltonian) = haskey(H, :DH)
+diagonalize!(H::Hamiltonian) = (H[:diag] = diagonalize(get_ham(H))) # maybe find a better key for the diagonalized hamiltonian
+isdiagonalized(H::Hamiltonian) = haskey(H, :diag)
 
 @testitem "Hamiltonian struct" begin
-    using QuantumDots, LinearAlgebra
-    import QuantumDots: kitaev_hamiltonian
-    import Majoranas: Hamiltonian, get_basis, get_ham, diagonalize!, isdiagonalized
-    cpmm = FermionBasis(1:2; qn=ParityConservation())
-    cpmm_noparity = FermionBasis(1:2)
-    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), cpmm)
-    H = Hamiltonian(pmmham; basis=cpmm)
-    @test get_basis(H) == cpmm
-    @test get_ham(H) == pmmham == H.ham
-    @test !haskey(H, :X)
-    @test !isdiagonalized(H)
-    diagonalize!(H)
-    @test isdiagonalized(H)
+    using FermionicHilbertSpaces, LinearAlgebra
+    import Majoranas: Hamiltonian, get_basis, get_ham, diagonalize!, isdiagonalized, kitaev_hamiltonian
+    H = hilbert_space(1:2, ParityConservation())
+    cpmm = fermions(H)
+    pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), H)
+    ham = Hamiltonian(pmmham; basis=H)
+    @test get_basis(ham) == H
+    @test get_ham(ham) == pmmham == ham.ham
+    @test !haskey(ham, :X)
+    @test !isdiagonalized(ham)
+    diagonalize!(ham)
+    @test isdiagonalized(ham)
 end
 
 function ground_states(H::Hamiltonian)
     haskey(H, :groundstates) && return H[:groundstates] # should they be stored?
     isdiagonalized(H) || diagonalize!(H)
-    sectors = QuantumDots.blocks(get_diag_ham(H); full=true)
+    sectors = blocks(get_diag_ham(H); full=true)
     oddvec = first(eachcol(sectors[1].vectors))
     evenvec = first(eachcol(sectors[2].vectors))
     H[:groundstates] = (oddvec, evenvec)
@@ -45,7 +44,7 @@ end
 
 function full_states(H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
-    sectors = QuantumDots.blocks(get_diag_ham(H); full=true)
+    sectors = blocks(get_diag_ham(H); full=true)
     oddvecs = eachcol(sectors[1].vectors)
     evenvecs = eachcol(sectors[2].vectors)
     return oddvecs, evenvecs
@@ -53,7 +52,7 @@ end
 
 function energy_info(H::Hamiltonian) # user won't call this?
     isdiagonalized(H) || diagonalize!(H)
-    sectors = QuantumDots.blocks(get_diag_ham(H))
+    sectors = blocks(get_diag_ham(H))
     oddvals = sectors[1].values
     evenvals = sectors[2].values
     deg = first(oddvals) - first(evenvals)
@@ -100,7 +99,7 @@ function majorana_coefficients(H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     basis = get_basis(H)
     oddvec, evenvec = ground_states(H)
-    maj_coeffs = QuantumDots.majorana_coefficients(oddvec, evenvec, basis)
+    maj_coeffs = FermionicHilbertSpaces.majorana_coefficients(oddvec, evenvec, basis)
     H[:maj_coeffs] = maj_coeffs
     return maj_coeffs
 end
@@ -110,7 +109,7 @@ function MP(R, H::Hamiltonian)
     return majorana_polarization(majcoeffs..., R).mp
 end
 
-function LD(red_basis::FermionBasis, H::Hamiltonian)
+function LD(red_basis::AbstractHilbertSpace, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     δρ = oddvec * oddvec' - evenvec * evenvec'
@@ -124,7 +123,7 @@ function groundstate_majoranas(oddvec, evenvec)
     return γ, γtilde
 end
 
-function LF_info(red_basis::FermionBasis, H::Hamiltonian, θ=0.0)
+function LF_info(red_basis::AbstractHilbertSpace, H::Hamiltonian, θ=0.0)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     γ, γtilde = groundstate_majoranas(oddvec, evenvec)
@@ -140,26 +139,26 @@ function LF_info(red_basis::FermionBasis, H::Hamiltonian, θ=0.0)
     LF1θ = norm(svdvals(γθR), 1)
     return (; LF, LFmax, LFθ, LF1θ, γmin, γmax, γθ, θmin)
 end
-LF_info(R, H::Hamiltonian) = LF_info(FermionBasis(R; qn=ParityConservation()), H)
+LF_info(R, H::Hamiltonian) = LF_info(hilbert_space(R, ParityConservation()), H)
 
-LF(red_basis::FermionBasis, H::Hamiltonian) = LF_info(red_basis, H).LF
-LF(R, H::Hamiltonian) = LF(FermionBasis(R; qn=ParityConservation()), H)
+LF(red_basis::AbstractHilbertSpace, H::Hamiltonian) = LF_info(red_basis, H).LF
+LF(R, H::Hamiltonian) = LF(hilbert_space(R, ParityConservation()), H)
 
 function alpha_beta_matrices(oddvec, evenvec, basis, red_basis,)
     A_full = oddvec * evenvec'
     A_red = partial_trace(A_full, basis, red_basis)
-    block_inds_red = QuantumDots.blockinds(QuantumDots.symmetry(red_basis))
+    block_inds_red = FermionicHilbertSpaces.blockinds(FermionicHilbertSpaces.symmetry(red_basis))
     α = sqrt(2) * A_red[block_inds_red[1], block_inds_red[2]]
     β = -1 * sqrt(2) * A_red[block_inds_red[2], block_inds_red[1]]'
     return α, β
 end
 
-function creduced(red_basis::FermionBasis, H::Hamiltonian)
+function creduced(red_basis::AbstractHilbertSpace, H::Hamiltonian)
     isdiagonalized(H) || diagonalize!(H)
     oddvec, evenvec = ground_states(H)
     γ, _ = groundstate_majoranas(oddvec, evenvec)
     basis = get_basis(H)
-    P = QuantumDots.parityoperator(basis)
+    P = FermionicHilbertSpaces.parityoperator(basis)
     c = (I + P) * γ
     return norm(partial_trace(c, basis, red_basis))
 end
@@ -176,15 +175,16 @@ function single_particle_LF(R, H::Hamiltonian)
 end
 
 @testitem "Majorana metrics" begin
-    using QuantumDots, LinearAlgebra
-    import QuantumDots: kitaev_hamiltonian
+    using FermionicHilbertSpaces, LinearAlgebra
+    import FermionicHilbertSpaces: kitaev_hamiltonian
     import Majoranas: Hamiltonian, ground_states, energy_info, degeneracy, deg_ratio, excgap, spectrum_weakness
     import Majoranas: MP, LD, LF, LF_info, single_particle_LF
-    cpmm = FermionBasis(1:2; qn=ParityConservation())
+    h = hilbert_space(1:2, ParityConservation())
+    cpmm = fermions(h)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(cpmm; μ=1.0, t=exp(1im * pi / 3), Δ=2.0, V=2.0)), cpmm)
     H = Hamiltonian(pmmham; basis=cpmm)
     regions = [[1], [2], [1, 2]]
-    bases = [FermionBasis(R; qn=ParityConservation()) for R in regions]
+    bases = [hilbert_space(R, ParityConservation()) for R in regions]
     @test all(map(R -> MP(R, H), regions) .≈ [1.0, 1.0, 0.0])
     @test haskey(H, :maj_coeffs)
     @test all(map(bR -> LD(bR, H), bases) .≈ [0.0, 0.0, sqrt(2)])
@@ -207,8 +207,8 @@ end
 end
 
 @testitem "LF, γmin and alpha_beta_matrices" begin
-    using QuantumDots, LinearAlgebra
-    import QuantumDots: kitaev_hamiltonian
+    using FermionicHilbertSpaces, LinearAlgebra
+    import FermionicHilbertSpaces: kitaev_hamiltonian
     import Majoranas: Hamiltonian, LD, LF, LF_info, alpha_beta_matrices, ground_states
     # test LF and γmin for a 2-site complex interacting Kitaev chain
     qn = ParityConservation()

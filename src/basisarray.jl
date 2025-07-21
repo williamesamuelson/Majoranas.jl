@@ -109,55 +109,55 @@ LinearAlgebra.Hermitian(b::BasisArray) = BasisArray(Hermitian(b.parent), b.basis
 Base.zero(x::BasisArray) = BasisArray(zero(x.parent), x.basis)
 Base.one(x::BasisArray) = BasisArray(one(x.parent), x.basis)
 
-QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::FermionBasis) = BasisArray(wedge(map(b -> b.parent, bs), map(b -> b.basis, bs), b), b)
-QuantumDots.blockdiagonal(b::BasisArray) = BasisArray(blockdiagonal(b.parent, b.basis), b.basis)
-QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::QuantumDots.AbstractManyBodyBasis) = BasisArray(partial_trace(m.parent, m.basis, bsub), bsub)
+FermionicHilbertSpaces.tensor_product(bs::AbstractVector{<:BasisArray}, b::AbstractHilbertSpace) = BasisArray(tensor_product(map(b -> b.parent, bs), map(b -> b.basis, bs), b), b)
+blockdiagonal(b::BasisArray) = BasisArray(blockdiagonal(b.parent, b.basis), b.basis)
+FermionicHilbertSpaces.partial_trace(m::Union{BMatrix,BVector}, bsub::AbstractHilbertSpace) = BasisArray(partial_trace(m.parent, m.basis, bsub), bsub)
 
-struct ManyBodyBasisArrayWrapper{B<:QuantumDots.AbstractManyBodyBasis} <: QuantumDots.AbstractManyBodyBasis
-    basis::B
-end
-Base.getindex(b::ManyBodyBasisArrayWrapper, i) = BasisArray(b.basis[i], b.basis)
-Base.getindex(b::ManyBodyBasisArrayWrapper, args...) = BasisArray(b.basis[args], b.basis)
-Base.keys(b::ManyBodyBasisArrayWrapper) = keys(b.basis)
-Base.show(io::IO, ::MIME"text/plain", b::ManyBodyBasisArrayWrapper) = show(io, b)
-function Base.show(io::IO, b::ManyBodyBasisArrayWrapper)
-    print(io, "ManyBodyBasisArrayWrapper{\n")
-    show(b.basis)
-    print(io, "}")
-end
-function Base.iterate(b::ManyBodyBasisArrayWrapper)
-    i = iterate(b.basis)
-    isnothing(i) && return i
-    x, s = i
-    (BasisArray(x, b.basis), s)
-end
-function Base.iterate(b::ManyBodyBasisArrayWrapper, state)
-    i = iterate(b.basis, state)
-    isnothing(i) && return i
-    x, s = i
-    (BasisArray(x, b.basis), s)
-end
-Base.length(b::ManyBodyBasisArrayWrapper) = length(b.basis)
-QuantumDots.symmetry(b::ManyBodyBasisArrayWrapper) = QuantumDots.symmetry(b.basis)
-QuantumDots.nbr_of_modes(b::ManyBodyBasisArrayWrapper) = nbr_of_modes(b.basis)
-Base.eltype(b::ManyBodyBasisArrayWrapper) = eltype(b.basis)
-Base.keytype(b::ManyBodyBasisArrayWrapper) = keytype(b.basis)
-BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.basis)
-QuantumDots.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper) = wedge(bs, b.basis)
-QuantumDots.partial_trace(m::Union{BMatrix,BVector}, bsub::ManyBodyBasisArrayWrapper) = BasisArray(partial_trace(m.parent, m.basis, bsub.basis), bsub.basis)
+# struct ManyBodyBasisArrayWrapper{B<:FermionicHilbertSpaces.} <: FermionicHilbertSpaces.AbstractManyBodyBasis
+#     basis::B
+# end
+# Base.getindex(b::ManyBodyBasisArrayWrapper, i) = BasisArray(b.basis[i], b.basis)
+# Base.getindex(b::ManyBodyBasisArrayWrapper, args...) = BasisArray(b.basis[args], b.basis)
+# Base.keys(b::ManyBodyBasisArrayWrapper) = keys(b.basis)
+# Base.show(io::IO, ::MIME"text/plain", b::ManyBodyBasisArrayWrapper) = show(io, b)
+# function Base.show(io::IO, b::ManyBodyBasisArrayWrapper)
+#     print(io, "ManyBodyBasisArrayWrapper{\n")
+#     show(b.basis)
+#     print(io, "}")
+# end
+# function Base.iterate(b::ManyBodyBasisArrayWrapper)
+#     i = iterate(b.basis)
+#     isnothing(i) && return i
+#     x, s = i
+#     (BasisArray(x, b.basis), s)
+# end
+# function Base.iterate(b::ManyBodyBasisArrayWrapper, state)
+#     i = iterate(b.basis, state)
+#     isnothing(i) && return i
+#     x, s = i
+#     (BasisArray(x, b.basis), s)
+# end
+# Base.length(b::ManyBodyBasisArrayWrapper) = length(b.basis)
+# FermionicHilbertSpaces.symmetry(b::ManyBodyBasisArrayWrapper) = FermionicHilbertSpaces.symmetry(b.basis)
+# FermionicHilbertSpaces.nbr_of_modes(b::ManyBodyBasisArrayWrapper) = nbr_of_modes(b.basis)
+# Base.eltype(b::ManyBodyBasisArrayWrapper) = eltype(b.basis)
+# Base.keytype(b::ManyBodyBasisArrayWrapper) = keytype(b.basis)
+# BasisArray(m::AbstractArray, b::ManyBodyBasisArrayWrapper) = BasisArray(m, b.basis)
+# FermionicHilbertSpaces.wedge(bs::AbstractVector{<:BasisArray}, b::ManyBodyBasisArrayWrapper) = wedge(bs, b.basis)
+# FermionicHilbertSpaces.partial_trace(m::Union{BMatrix,BVector}, bsub::ManyBodyBasisArrayWrapper) = BasisArray(partial_trace(m.parent, m.basis, bsub.basis), bsub.basis)
 
-function QuantumDots.diagonalize(H::BasisArray)
-    dh = diagonalize(H.parent)
-    QuantumDots.DiagonalizedHamiltonian(dh.values, dh.vectors, H)
-end
-QuantumDots._blocks(ham::BasisArray) = QuantumDots._blocks(ham.parent)
-QuantumDots.blocks(ham::BasisArray) = QuantumDots.blocks(ham.parent)
+# function diagonalize(H::BasisArray)
+#     dh = diagonalize(H.parent)
+#     FermionicHilbertSpaces.DiagonalizedHamiltonian(dh.values, dh.vectors, H)
+# end
+# FermionicHilbertSpaces._blocks(ham::BasisArray) = FermionicHilbertSpaces._blocks(ham.parent)
+# FermionicHilbertSpaces.blocks(ham::BasisArray) = FermionicHilbertSpaces.blocks(ham.parent)
 get_basis(H::Hamiltonian{<:BasisArray}) = H.ham.basis
 
 @testitem "BasisArray" begin
     using Majoranas: BasisArray, ManyBodyBasisArrayWrapper, Hamiltonian, MP, LD, LF, ground_states, energy_info, deg_ratio, excgap
-    using QuantumDots, LinearAlgebra
-    import QuantumDots: kitaev_hamiltonian
+    using FermionicHilbertSpaces, LinearAlgebra
+    import FermionicHilbertSpaces: kitaev_hamiltonian
 
     qn = ParityConservation()
     c1 = FermionBasis(1:1; qn) |> ManyBodyBasisArrayWrapper

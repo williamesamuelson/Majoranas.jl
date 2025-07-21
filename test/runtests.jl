@@ -3,11 +3,11 @@ using TestItemRunner
 @run_package_tests
 
 @testitem "Majoranas" begin
-    using QuantumDots, LinearAlgebra, Random
+    using FermionicHilbertSpaces, LinearAlgebra, Random
     Random.seed!(1234)
     c = FermionBasis(1:2, (:a, :b))
     γ = SingleParticleMajoranaBasis(c)
-    @test length(γ) == 2 * QuantumDots.nbr_of_modes(c)
+    @test length(γ) == 2 * FermionicHilbertSpaces.nbr_of_modes(c)
     test_label = (1, :a, :+)
     for γ_op in γ
         @test γ_op == γ_op'
@@ -45,12 +45,12 @@ end
 end
 
 @testitem "Basic weak Majoranas" begin
-    using QuantumDots, LinearAlgebra
-    import QuantumDots: kitaev_hamiltonian
-    c = FermionBasis(1:2; qn=QuantumDots.parity)
+    using FermionicHilbertSpaces, LinearAlgebra
+    import FermionicHilbertSpaces: kitaev_hamiltonian
+    c = FermionBasis(1:2; qn=FermionicHilbertSpaces.parity)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
-    fullsectors = QuantumDots.blocks(eig; full=true)
+    fullsectors = FermionicHilbertSpaces.blocks(eig; full=true)
     oddvecs = fullsectors[1].vectors
     evenvecs = fullsectors[2].vectors
     γ_sp = SingleParticleMajoranaBasis(c)
@@ -63,7 +63,7 @@ end
     # test matrix construction
     γ_mb = ManyBodyMajoranaBasis(γ_sp)
     @test all(values(γ_mb) .== values(ManyBodyMajoranaBasis(γ_sp, 3)))
-    nbr_of_majoranas = 2 * QuantumDots.nbr_of_modes(c)
+    nbr_of_majoranas = 2 * FermionicHilbertSpaces.nbr_of_modes(c)
     @test length(γ_mb) == mapreduce(l -> binomial(nbr_of_majoranas, l), +, 1:2:nbr_of_majoranas)
     BP, BPQ = Majoranas.construct_complex_matrices(γ_mb, P, Q, Majoranas._def_pauli_comps(γ_mb)[1])
     @test size(BP) == (2, length(γ_mb))
@@ -88,14 +88,14 @@ end
 end
 
 @testitem "WeakMajoranaProblem" begin
-    using QuantumDots, LinearAlgebra, AffineRayleighOptimization
-    import QuantumDots: kitaev_hamiltonian
+    using FermionicHilbertSpaces, LinearAlgebra, AffineRayleighOptimization
+    import FermionicHilbertSpaces: kitaev_hamiltonian
     import AffineRayleighOptimization: RAYLEIGH_GENEIG, RAYLEIGH_CHOL, RAYLEIGH_EIG, RAYLEIGH_SPARSE
-    c = FermionBasis(1:2; qn=QuantumDots.parity)
+    c = FermionBasis(1:2; qn=FermionicHilbertSpaces.parity)
     γ = SingleParticleMajoranaBasis(c)
     pmmham = blockdiagonal(Hermitian(kitaev_hamiltonian(c; μ=0.0, t=1.0, Δ=1.0)), c)
     eig = diagonalize(pmmham)
-    fullsectors = QuantumDots.blocks(eig; full=true)
+    fullsectors = FermionicHilbertSpaces.blocks(eig; full=true)
     oddvecs = fullsectors[1].vectors
     evenvecs = fullsectors[2].vectors
     γ_mb = ManyBodyMajoranaBasis(γ, 3)

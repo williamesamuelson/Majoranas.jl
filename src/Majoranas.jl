@@ -1,18 +1,21 @@
 module Majoranas
 using LinearAlgebra
-using QuantumDots
+using FermionicHilbertSpaces
 using AffineRayleighOptimization
 using LinearSolve
 using Combinatorics
 using TestItems
 using SparseArrays
 using OrderedCollections
+using BlockDiagonals
 
 import AffineRayleighOptimization: solve
-import QuantumDots: majorana_polarization
+import FermionicHilbertSpaces: AbstractHilbertSpace, MajoranaHilbertSpace
 
 include("majorana_basis.jl")
 include("hamiltonian.jl")
+include("blockdiagonal.jl")
+include("kitaev.jl")
 include("utils.jl")
 include("weak_majorana_utils.jl")
 include("weak_majorana_constraints.jl")
@@ -21,6 +24,7 @@ include("majorana_polarization.jl")
 include("majorana_metrics.jl")
 include("basisarray.jl")
 
+export blockdiagonal
 export SingleParticleMajoranaBasis, ManyBodyMajoranaBasis, HamiltonianBasis, ProjectedHamiltonianBasis, labels, coeffs_to_dict
 export WeakMajoranaProblem
 export solve

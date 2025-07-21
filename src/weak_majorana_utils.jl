@@ -14,12 +14,12 @@ function projection_ops(states)
     return P, Q
 end
 
-function many_body_content(γbasis::ManyBodyMajoranaBasis, coeffs::AbstractVector)
-    M = many_body_content_matrix(γbasis)
-    return coeffs'*M*coeffs/norm(coeffs)^2
-end
+# function many_body_content(γbasis::ManyBodyMajoranaBasis, coeffs::AbstractVector)
+#     M = many_body_content_matrix(γbasis)
+#     return coeffs'*M*coeffs/norm(coeffs)^2
+# end
 
-function many_body_content_matrix(γbasis::ManyBodyMajoranaBasis)
-    return Diagonal([length(label) for label in eachindex(γbasis)])
-end
+# function many_body_content_matrix(γbasis::ManyBodyMajoranaBasis)
+#     return Diagonal([length(label) for label in eachindex(γbasis)])
+# end
 

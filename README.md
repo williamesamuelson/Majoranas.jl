@@ -4,10 +4,10 @@
 [![Coverage](https://codecov.io/gh/williamesamuelson/Majoranas.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/williamesamuelson/Majoranas.jl)
 
 ## Installation on Julia versions below 1.11
-This package depends on QuantumDots and AffineRayleighOptimization, which are not registered in the general registry. You may need to manually add them directly by
+This package depends on FermionicHilbertSpaces and AffineRayleighOptimization, which are not registered in the general registry. You may need to manually add them directly by
 
 ```julia
-using Pkg; Pkg.add(url="https://github.com/cvsvensson/QuantumDots.jl"); Pkg.add(url="https://github.com/williamesamuelson/AffineRayleighOptimization.jl")
+using Pkg; Pkg.add(url="https://github.com/cvsvensson/FermionicHilbertSpaces.jl"); Pkg.add(url="https://github.com/williamesamuelson/AffineRayleighOptimization.jl")
 ```
 or by adding the registry
 ```julia
@@ -15,5 +15,5 @@ using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/williamesamue
 ```
 and add them from there
 ```julia
-using Pkg; Pkg.add(QuantumDots); Pkg.add(AffineRayleighOptimization)
+using Pkg; Pkg.add(FermionicHilbertSpaces); Pkg.add(AffineRayleighOptimization)
 ```

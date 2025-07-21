@@ -1,6 +1,14 @@
 import AffineRayleighOptimization: RAYLEIGH_EIG, RAYLEIGH_GENEIG
 import LinearSolve: KrylovJL_MINRES
 
+abstract type AbstractMinimizer end
+struct RayleighQuotient{R} <: AbstractMinimizer
+    q::R
+end
+struct QuadraticForm{Q} <: AbstractMinimizer
+    q::Q
+end
+
 """
     WeakMajoranaProblem(minimizer, γ, constraints, bs, projs)
 
@@ -11,38 +19,32 @@ A weak Majorana problem with
     bs: rhs vectors of constraint equation
     projs: projection operators onto ground states/excited states
 """
-struct WeakMajoranaProblem{M,G,C,B,PQ}
+struct WeakMajoranaProblem{M<:AbstractMinimizer,G,C,B,PQ}
     minimizer::M
     γ::G
     constraints::C
     bs::B
     projs::PQ
 end
-struct RayleighQuotient{R}
-    q::R
-end
-struct QuadraticForm{Q}
-    q::Q
-end
 
-_def_pauli_comps(::ManyBodyMajoranaBasis) = ([nothing, 1.0, 0.0, nothing], [nothing, 0.0, 1.0, nothing])
-_def_minimizer(γ::ManyBodyMajoranaBasis) = RayleighQuotient(many_body_content_matrix(γ))
-function WeakMajoranaProblem(γ::ManyBodyMajoranaBasis, oddvecs, evenvecs, minimizer=_def_minimizer(γ), gs_pauli_comps_vec=_def_pauli_comps(γ))
+_def_pauli_comps() = ([nothing, 1.0, 0.0, nothing], [nothing, 0.0, 1.0, nothing])
+_def_minimizer(manybodybasis) = RayleighQuotient(many_body_content_matrix(manybodybasis))
+function WeakMajoranaProblem(manybodybasis, oddvecs, evenvecs, minimizer::AbstractMinimizer=_def_minimizer(manybodybasis), gs_pauli_comps_vec=_def_pauli_comps(manybodybasis))
     P, Q = projection_ops(oddvecs, evenvecs)
-    constraints = weak_majorana_constraint_matrix(γ, P, Q, gs_pauli_comps_vec[1]) # LHS matrix same for both Majoranas
+    constraints = weak_majorana_constraint_matrix(manybodybasis, P, Q, gs_pauli_comps_vec[1]) # LHS matrix same for both Majoranas
     bs = [right_hand_side(σs, Q) for σs in gs_pauli_comps_vec]
     constraints, bs = _get_reduced_eqs(constraints, bs)
-    WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
+    WeakMajoranaProblem(minimizer, manybodybasis, constraints, bs, (P, Q))
 end
 
 # In the Hamiltonian problem, we might only have one parity
 # Also, only one matrix to find
-function WeakMajoranaProblem(γ::HamiltonianBasis, states, minimizer, gs_pauli_comps)
+function WeakEvenMajoranaProblem(manybodybasis, states, minimizer::AbstractMinimizer, gs_pauli_comps)
     P, Q = projection_ops(states)
-    constraints = weak_majorana_constraint_matrix(γ, P, Q, gs_pauli_comps)
+    constraints = weak_majorana_constraint_matrix(manybodybasis, P, Q, gs_pauli_comps)
     bs = [right_hand_side(gs_pauli_comps, Q)]
     constraints, bs = _get_reduced_eqs(constraints, bs)
-    WeakMajoranaProblem(minimizer, γ, constraints, bs, (P, Q))
+    WeakMajoranaProblem(minimizer, manybodybasis, constraints, bs, (P, Q))
 end
 
 function _zero_row_equations(constraints, bs, ϵ=1e-16)
@@ -68,9 +70,9 @@ function _get_reduced_eqs(constraints, bs)
 end
 
 @testitem "Hamiltonian weak Majorana problem" begin
-    using QuantumDots, LinearAlgebra, AffineRayleighOptimization
-    import QuantumDots: kitaev_hamiltonian
-    c = FermionBasis(1:2; qn=QuantumDots.parity)
+    using FermionicHilbertSpaces, LinearAlgebra, AffineRayleighOptimization
+    import FermionicHilbertSpaces: kitaev_hamiltonian
+    c = FermionBasis(1:2; qn=FermionicHilbertSpaces.parity)
     pmmham = Hermitian(Matrix(kitaev_hamiltonian(c; μ=0.0, t=2.0, Δ=1.0)))
     eig = eigen(pmmham)
     δE = (eig.values[2] - eig.values[1]) / 2
@@ -115,5 +117,5 @@ function solve(prob::WeakMajoranaProblem{<:Nothing}, alg::WM_BACKSLASH_SPARSE)
     _return_sol(prob, sols)
 end
 
-_return_sol(prob::WeakMajoranaProblem{M,<:ManyBodyMajoranaBasis}, sols) where {M} = sols
-_return_sol(prob::WeakMajoranaProblem{M,<:HamiltonianBasis}, sols) where {M} = only(sols)
+# _return_sol(prob::WeakMajoranaProblem{M,<:ManyBodyMajoranaBasis}, sols) where {M} = sols
+# _return_sol(prob::WeakMajoranaProblem{M,<:HamiltonianBasis}, sols) where {M} = only(sols)
